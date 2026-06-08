@@ -1,0 +1,14 @@
+{
+  "name": "milma-dashboard",
+  "version": "1.0.0",
+  "description": "Milma Kattappana Temperature Monitor Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@influxdata/influxdb-client": "^1.33.2",
+    "express": "^4.18.2",
+    "ws": "^8.16.0"
+  }
+}
