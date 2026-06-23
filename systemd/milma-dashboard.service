@@ -1,0 +1,13 @@
+[Unit]
+Description=Milma Temperature Dashboard
+After=network.target influxdb.service
+
+[Service]
+User=goose_pi
+WorkingDirectory=/home/goose_pi/milma_dashboard
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Milma Temperature Poller
+After=network.target influxdb.service
+
+[Service]
+User=goose_pi
+WorkingDirectory=/home/goose_pi/milma_project
+ExecStart=/home/goose_pi/milma_project/venv/bin/python3 poller.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

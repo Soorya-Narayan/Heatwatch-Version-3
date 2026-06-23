@@ -4,6 +4,7 @@ const { WebSocketServer } = require('ws');
 const { InfluxDB } = require('@influxdata/influxdb-client');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 const app = express();
 const server = http.createServer(app);
@@ -41,24 +42,40 @@ let SENSORS = loadConfig();
 
 const { execSync } = require('child_process');
 
+function getCpuUsageTicks() {
+  const cpus = os.cpus();
+  let user = 0, nice = 0, sys = 0, idle = 0, irq = 0;
+  for (const cpu of cpus) {
+    user += cpu.times.user;
+    nice += cpu.times.nice;
+    sys += cpu.times.sys;
+    idle += cpu.times.idle;
+    irq += cpu.times.irq;
+  }
+  const total = user + nice + sys + idle + irq;
+  return { idle, total };
+}
+let lastCpuStats = getCpuUsageTicks();
+
+function getCpuUsagePercent() {
+  const current = getCpuUsageTicks();
+  const idleDiff = current.idle - lastCpuStats.idle;
+  const totalDiff = current.total - lastCpuStats.total;
+  lastCpuStats = current;
+  if (totalDiff === 0) return 0;
+  return Math.round(100 * (1 - idleDiff / totalDiff));
+}
+
 app.get('/api/system', (req, res) => {
   try {
-    const { execSync } = require('child_process');
-    const cpuTemp = execSync("vcgencmd measure_temp 2>/dev/null").toString().trim().replace("temp=","");
+    const cpuTemp = execSync("vcgencmd measure_temp 2>/dev/null").toString().trim().replace("temp=","") || '--';
     const memLines = execSync("free -m").toString().split('\n')[1].trim().split(/\s+/);
     const memTotal = parseInt(memLines[1]);
     const memUsed  = parseInt(memLines[2]);
     const memPct   = Math.round(memUsed / memTotal * 100);
     const diskLine = execSync("df -h / | tail -1").toString().trim().split(/\s+/);
     const diskTotal = diskLine[1], diskUsed = diskLine[2], diskPct = parseInt(diskLine[4]);
-    const cpuRaw = execSync("grep 'cpu ' /proc/stat").toString().trim().split(/\s+/);
-    const idle1 = parseInt(cpuRaw[4]);
-    const total1 = cpuRaw.slice(1).reduce((a,b) => a + parseInt(b), 0);
-    execSync("sleep 0.5");
-    const cpuRaw2 = execSync("grep 'cpu ' /proc/stat").toString().trim().split(/\s+/);
-    const idle2 = parseInt(cpuRaw2[4]);
-    const total2 = cpuRaw2.slice(1).reduce((a,b) => a + parseInt(b), 0);
-    const cpu = Math.round(100 * (1 - (idle2 - idle1) / (total2 - total1)));
+    const cpu = getCpuUsagePercent();
     let dbSize = '--';
     try { dbSize = execSync("sudo du -sh /var/lib/influxdb 2>/dev/null").toString().trim().split(/\s+/)[0]; } catch(e) {}
     res.json({ cpu, cpuTemp, memUsed: memUsed+'MB', memTotal: memTotal+'MB', memPct, diskUsed, diskTotal, diskPct, dbSize });
@@ -71,10 +88,47 @@ app.get('/api/system', (req, res) => {
 app.get('/api/config', (req,res) => res.json(SENSORS));
 app.post('/api/config', (req,res) => { SENSORS = req.body; saveConfig(SENSORS); res.json({ok:true}); });
 
+app.get('/api/stats', async (req, res) => {
+  const todayStart = new Date();
+  todayStart.setHours(0,0,0,0);
+  const q = `from(bucket:"${INFLUX_BUCKET}")|>range(start:${todayStart.toISOString()})|>filter(fn:(r)=>r._measurement=="temperature")|>count()`;
+  try {
+    const rows = await queryApi.collectRows(q);
+    const total = rows.reduce((acc, row) => acc + (row._value || 0), 0);
+    res.json({ total });
+  } catch(e) {
+    res.json({ total: 0 });
+  }
+});
+
+function getAggregateWindow(range) {
+  const match = range.match(/-?(\d+)([mhd])/);
+  if (!match) return '1m';
+  const val = parseInt(match[1]);
+  const unit = match[2];
+
+  let minutes = 0;
+  if (unit === 'm') minutes = val;
+  else if (unit === 'h') minutes = val * 60;
+  else if (unit === 'd') minutes = val * 24 * 60;
+
+  if (minutes <= 30) return '10s';
+  if (minutes <= 60) return '1m';
+  if (minutes <= 360) return '5m';
+  if (minutes <= 1440) return '15m';
+  if (minutes <= 10080) return '2h';
+  if (minutes <= 43200) return '12h';
+  if (minutes <= 129600) return '24h';
+  if (minutes <= 259200) return '48h';
+  if (minutes <= 525600) return '96h';
+  return '168h';
+}
+
 app.get('/api/history/:sensor', async (req,res) => {
   const { sensor } = req.params;
   const range = req.query.range || '-1h';
-  const q = `from(bucket:"${INFLUX_BUCKET}")|>range(start:${range})|>filter(fn:(r)=>r._measurement=="temperature")|>filter(fn:(r)=>r._field=="value")|>filter(fn:(r)=>r.sensor=="${sensor}")|>filter(fn:(r)=>r._value>-999)|>aggregateWindow(every:1m,fn:mean,createEmpty:false)`;
+  const every = getAggregateWindow(range);
+  const q = `from(bucket:"${INFLUX_BUCKET}")|>range(start:${range})|>filter(fn:(r)=>r._measurement=="temperature")|>filter(fn:(r)=>r._field=="value")|>filter(fn:(r)=>r.sensor=="${sensor}")|>filter(fn:(r)=>r._value>-999)|>aggregateWindow(every:${every},fn:mean,createEmpty:false)`;
   try { const rows = await queryApi.collectRows(q); res.json(rows.map(r=>({time:r._time,value:parseFloat(r._value.toFixed(2))}))); }
   catch(e) { res.json([]); }
 });
@@ -116,7 +170,8 @@ app.delete('/api/data', async (req,res) => {
 });
 
 async function fetchExportData(range) {
-  const q = `from(bucket:"${INFLUX_BUCKET}")|>range(start:${range})|>filter(fn:(r)=>r._measurement=="temperature")|>filter(fn:(r)=>r._field=="value")|>filter(fn:(r)=>r._value>-999)|>aggregateWindow(every:1m,fn:mean,createEmpty:false)|>pivot(rowKey:["_time"],columnKey:["sensor"],valueColumn:"_value")`;
+  const every = getAggregateWindow(range);
+  const q = `from(bucket:"${INFLUX_BUCKET}")|>range(start:${range})|>filter(fn:(r)=>r._measurement=="temperature")|>filter(fn:(r)=>r._field=="value")|>filter(fn:(r)=>r._value>-999)|>aggregateWindow(every:${every},fn:mean,createEmpty:false)|>pivot(rowKey:["_time"],columnKey:["sensor"],valueColumn:"_value")`;
   try {
     const rows = await queryApi.collectRows(q);
     return rows.map(row => {
