@@ -28,6 +28,7 @@ A real-time industrial temperature monitoring dashboard for **Milma Plant, Katta
  
 ---
 
+
 ## Features
 
 - **Live Monitoring** — 8 channel RTD temperature display, updates every 2 seconds via WebSocket
