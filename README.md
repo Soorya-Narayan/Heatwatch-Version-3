@@ -13,7 +13,7 @@ A real-time industrial temperature monitoring dashboard for **Milma Plant, Katta
  
 | Live Monitor | Trends |
 |:---:|:---:|
-| ![Live](Screenshots/screenshot_live.jpeg) | ![Trends](Screenshots/screenshot_trends.png) |
+| ![Live](Screenshots/screenshot_live.png) | ![Trends](Screenshots/screenshot_trends.png) |
 | Real-time 8-channel temperature display with alarm indicators | Single multi-channel trend chart with click-to-hide |
  
 | History | Settings |
