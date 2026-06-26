@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const { WebSocketServer } = require('ws');
 const { InfluxDB } = require('@influxdata/influxdb-client');
 const path = require('path');
@@ -154,19 +155,44 @@ app.get('/api/export/json', async (req,res) => {
 app.delete('/api/data', async (req,res) => {
   const start = req.query.start || '1970-01-01T00:00:00Z';
   const stop  = req.query.stop  || new Date().toISOString();
+  const body = JSON.stringify({
+    start,
+    stop,
+    predicate: '_measurement="temperature"'
+  });
+  const urlObj = new URL(`${INFLUX_URL}/api/v2/delete?org=${encodeURIComponent(INFLUX_ORG)}&bucket=${encodeURIComponent(INFLUX_BUCKET)}`);
+  const isHttps = urlObj.protocol === 'https:';
+  const transport = isHttps ? https : http;
+  const options = {
+    hostname: urlObj.hostname,
+    port:     urlObj.port || (isHttps ? 443 : 80),
+    path:     urlObj.pathname + urlObj.search,
+    method:   'POST',
+    headers:  {
+      'Authorization': `Token ${INFLUX_TOKEN}`,
+      'Content-Type':  'application/json',
+      'Content-Length': Buffer.byteLength(body)
+    }
+  };
   try {
-    const deleteApi = influxDB.getDeleteApi(INFLUX_ORG);
-    await deleteApi.postDelete({
-      body: {
-        start: start,
-        stop:  stop,
-        predicate: '_measurement="temperature"'
-      },
-      bucket: INFLUX_BUCKET,
-      org:    INFLUX_ORG,
+    await new Promise((resolve, reject) => {
+      const request = transport.request(options, (response) => {
+        let data = '';
+        response.on('data', chunk => { data += chunk; });
+        response.on('end', () => {
+          if (response.statusCode >= 200 && response.statusCode < 300) {
+            resolve();
+          } else {
+            reject(new Error(`InfluxDB delete failed: ${response.statusCode} ${data}`));
+          }
+        });
+      });
+      request.on('error', reject);
+      request.write(body);
+      request.end();
     });
-    res.json({ok:true});
-  } catch(e) { res.status(500).json({error:e.message}); }
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 async function fetchExportData(range) {
