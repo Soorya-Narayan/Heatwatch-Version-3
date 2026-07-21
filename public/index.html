@@ -122,14 +122,14 @@
     border: 1px solid var(--border-color);
     border-radius: 20px;
     box-shadow: var(--shadow-main);
-    width: 90%;
-    max-width: 680px;
-    padding: 32px;
+    width: 92%;
+    max-width: 700px;
+    padding: 24px 32px;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 18px;
+    gap: 14px;
     animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -140,7 +140,7 @@
 
   .wizard-title {
     font-family: var(--font-heading);
-    font-size: 1.8rem;
+    font-size: 1.65rem;
     font-weight: 800;
     letter-spacing: -0.5px;
     background: linear-gradient(135deg, var(--text-main) 30%, var(--accent-cyan));
@@ -149,47 +149,46 @@
   }
 
   .wizard-subtitle {
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
-    max-width: 480px;
-    line-height: 1.5;
+    max-width: 500px;
+    line-height: 1.4;
   }
 
-  .wizard-progress { display: flex; gap: 8px; margin-bottom: 4px; }
+  .wizard-progress { display: flex; gap: 8px; margin-bottom: 2px; }
   .wizard-dot { width: 32px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); transition: background 0.3s ease; }
   .wizard-dot.active { background: var(--accent-blue); box-shadow: 0 0 8px var(--accent-blue); }
 
-  .form-grid { width: 100%; display: flex; flex-direction: column; gap: 12px; text-align: left; }
-  .form-group { display: flex; flex-direction: column; gap: 6px; }
-  .form-group label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-grid { width: 100%; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
   input, select {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--border-color);
     color: var(--text-main);
-    padding: 10px 14px;
+    padding: 8px 12px;
     border-radius: 8px;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     outline: none;
     transition: border-color 0.2s ease;
   }
   input:focus, select:focus { border-color: var(--accent-blue); }
 
+  /* ZERO-SCROLL 2x2 SENSOR GRID */
   .sensor-setup-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    max-height: 320px;
-    overflow-y: auto;
+    gap: 12px;
     width: 100%;
-    padding-right: 4px;
+    overflow: hidden;
   }
 
   .sensor-setup-item {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.25);
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    padding: 10px;
+    padding: 10px 12px;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -197,15 +196,15 @@
   }
 
   .thresh-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  .thresh-inputs input { padding: 6px 8px; font-size: 0.78rem; text-align: center; }
+  .thresh-inputs input { padding: 6px 4px; font-size: 0.78rem; text-align: center; }
 
   .btn {
     background: var(--accent-blue);
     color: #ffffff;
     border: none;
-    padding: 10px 20px;
-    border-radius: 9px;
-    font-size: 0.9rem;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 0.88rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -480,16 +479,16 @@
       </div>
     </div>
 
-    <!-- Step 3: RTD Sensors -->
-    <div id="wizard-step-3" style="display: none; width: 100%; flex-direction: column; gap: 14px;">
-      <h2 class="wizard-title">Configure 8 RTD Sensors</h2>
-      <p class="wizard-subtitle">Set names and threshold limits (HiHi, Hi, Lo, LoLo) for your PPI AIME 8U sensors.</p>
+    <!-- Step 3: RTD Sensors (2-Page Zero-Scroll Design) -->
+    <div id="wizard-step-3" style="display: none; width: 100%; flex-direction: column; gap: 12px;">
+      <h2 class="wizard-title" id="wz-step3-title">Configure RTD Sensors</h2>
+      <p class="wizard-subtitle" id="wz-step3-subtitle">Set names and threshold limits (HiHi, Hi, Lo, LoLo) for your sensors.</p>
 
       <div class="sensor-setup-grid" id="wizard-sensor-items"></div>
 
-      <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; margin-top: 10px;">
-        <button class="btn btn-secondary" onclick="goToWizardStep(2)">Back</button>
-        <button class="btn" onclick="goToWizardStep(4)">Next: Review →</button>
+      <div style="display: flex; gap: 12px; width: 100%; justify-content: space-between; margin-top: 6px;">
+        <button class="btn btn-secondary" id="wz-step3-back-btn" onclick="wizardStep3Back()">Back</button>
+        <button class="btn" id="wz-step3-next-btn" onclick="wizardStep3Next()">Next →</button>
       </div>
     </div>
 
@@ -754,6 +753,7 @@
   ];
 
   let isSystemConfigured = false;
+  let wizardSensorPage = 1; // 1 = Channels 1-4, 2 = Channels 5-8
   let activeInputElem = null;
   let isShiftActive = false;
   let isNumpadMode = false;
@@ -762,7 +762,6 @@
   let trendsChart = null;
   let historyData = [];
 
-  // Standalone Apple Boot Screen Timer
   window.onload = async () => {
     setupVirtualKeyboardListeners();
 
@@ -775,7 +774,6 @@
       if (data.sensors) wizardSensors = data.sensors;
     } catch(e) {}
 
-    // Auto dismiss boot logo screen after 3.5 seconds
     setTimeout(() => {
       dismissAppleBootScreen();
     }, 3500);
@@ -793,11 +791,10 @@
       initWebSocket();
     } else {
       document.getElementById('wizard-container').style.display = 'flex';
-      renderWizardSensorItems();
+      renderWizardSensorItems(1);
     }
   }
 
-  // Virtual Keyboard Integration
   function setupVirtualKeyboardListeners() {
     document.body.addEventListener('focusin', (e) => {
       if (e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'radio') {
@@ -846,11 +843,9 @@
       typedChar = char.toUpperCase();
       toggleShift();
     }
-    
     const start = activeInputElem.selectionStart || activeInputElem.value.length;
     const end = activeInputElem.selectionEnd || activeInputElem.value.length;
     const val = activeInputElem.value;
-    
     activeInputElem.value = val.substring(0, start) + typedChar + val.substring(end);
     activeInputElem.setSelectionRange(start + typedChar.length, start + typedChar.length);
     activeInputElem.dispatchEvent(new Event('input', { bubbles: true }));
@@ -861,7 +856,6 @@
     const start = activeInputElem.selectionStart || activeInputElem.value.length;
     const end = activeInputElem.selectionEnd || activeInputElem.value.length;
     const val = activeInputElem.value;
-    
     if (start === end && start > 0) {
       activeInputElem.value = val.substring(0, start - 1) + val.substring(end);
       activeInputElem.setSelectionRange(start - 1, start - 1);
@@ -872,20 +866,32 @@
     activeInputElem.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
-  // Wizard Handler Functions
   function goToWizardStep(step) {
     for (let i = 1; i <= 4; i++) {
       document.getElementById(`wizard-step-${i}`).style.display = i === step ? 'flex' : 'none';
       const dot = document.getElementById(`dot-${i}`);
       if (dot) dot.classList.toggle('active', i <= step);
     }
+    if (step === 3) renderWizardSensorItems(wizardSensorPage);
   }
 
-  function renderWizardSensorItems() {
+  // 2-PAGE ZERO-SCROLL SENSOR RENDERER
+  function renderWizardSensorItems(page = 1) {
+    wizardSensorPage = page;
     const container = document.getElementById('wizard-sensor-items');
     container.innerHTML = '';
 
-    wizardSensors.forEach((s, idx) => {
+    document.getElementById('wz-step3-title').innerText = page === 1 ? "Configure RTD Sensors (1 to 4)" : "Configure RTD Sensors (5 to 8)";
+    document.getElementById('wz-step3-subtitle').innerText = page === 1 ? "Set labels & alarm thresholds for Channels CH1 through CH4." : "Set labels & alarm thresholds for Channels CH5 through CH8.";
+
+    document.getElementById('wz-step3-back-btn').innerText = page === 1 ? "Back" : "← Channels 1-4";
+    document.getElementById('wz-step3-next-btn').innerText = page === 1 ? "Next: Channels 5-8 →" : "Next: Review →";
+
+    const startIndex = page === 1 ? 0 : 4;
+    const endIndex = page === 1 ? 4 : 8;
+
+    for (let idx = startIndex; idx < endIndex; idx++) {
+      const s = wizardSensors[idx];
       const div = document.createElement('div');
       div.className = 'sensor-setup-item';
       div.innerHTML = `
@@ -899,7 +905,44 @@
         </div>
       `;
       container.appendChild(div);
-    });
+    }
+  }
+
+  function saveCurrentWizardSensorPageValues() {
+    const startIndex = wizardSensorPage === 1 ? 0 : 4;
+    const endIndex = wizardSensorPage === 1 ? 4 : 8;
+
+    for (let idx = startIndex; idx < endIndex; idx++) {
+      const labelInput = document.getElementById(`wz-label-${idx}`);
+      if (labelInput) {
+        wizardSensors[idx] = {
+          ...wizardSensors[idx],
+          label: labelInput.value || wizardSensors[idx].label,
+          lolo: parseFloat(document.getElementById(`wz-lolo-${idx}`).value),
+          lo: parseFloat(document.getElementById(`wz-lo-${idx}`).value),
+          hi: parseFloat(document.getElementById(`wz-hi-${idx}`).value),
+          hihi: parseFloat(document.getElementById(`wz-hihi-${idx}`).value),
+        };
+      }
+    }
+  }
+
+  function wizardStep3Next() {
+    saveCurrentWizardSensorPageValues();
+    if (wizardSensorPage === 1) {
+      renderWizardSensorItems(2);
+    } else {
+      goToWizardStep(4);
+    }
+  }
+
+  function wizardStep3Back() {
+    saveCurrentWizardSensorPageValues();
+    if (wizardSensorPage === 2) {
+      renderWizardSensorItems(1);
+    } else {
+      goToWizardStep(2);
+    }
   }
 
   function validateStep2() {
@@ -917,23 +960,11 @@
     goToWizardStep(3);
   }
 
-  function collectWizardSensors() {
-    return wizardSensors.map((s, idx) => ({
-      ...s,
-      label: document.getElementById(`wz-label-${idx}`).value || s.label,
-      lolo: parseFloat(document.getElementById(`wz-lolo-${idx}`).value),
-      lo: parseFloat(document.getElementById(`wz-lo-${idx}`).value),
-      hi: parseFloat(document.getElementById(`wz-hi-${idx}`).value),
-      hihi: parseFloat(document.getElementById(`wz-hihi-${idx}`).value),
-    }));
-  }
-
   async function completeWizardSetup() {
     const username = document.getElementById('wz-username').value;
     const role = document.getElementById('wz-role').value;
     const accessLevel = document.getElementById('wz-access').value;
     const password = document.getElementById('wz-password').value;
-    wizardSensors = collectWizardSensors();
 
     const res = await fetch('/api/setup', {
       method: 'POST',
