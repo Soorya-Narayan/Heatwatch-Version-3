@@ -224,12 +224,12 @@
   /* --------------------------------------------------------- */
   #virtual-keyboard-drawer {
     position: fixed;
-    bottom: -320px;
+    bottom: -340px;
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
-    max-width: 760px;
-    background: rgba(15, 23, 42, 0.95);
+    max-width: 780px;
+    background: rgba(15, 23, 42, 0.96);
     border: 1px solid var(--border-color);
     border-top-left-radius: 20px;
     border-top-right-radius: 20px;
@@ -254,9 +254,10 @@
   }
 
   .vk-title { font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; }
-  .vk-close-btn { background: rgba(255, 255, 255, 0.1); border: none; color: #fff; padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+  .vk-close-btn { background: rgba(255, 255, 255, 0.1); border: none; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+  .vk-close-btn.active { background: var(--accent-blue); }
 
-  .vk-row { display: flex; justify-content: center; gap: 6px; width: 100%; }
+  .vk-row { display: flex; justify-content: center; gap: 5px; width: 100%; }
 
   .vk-key {
     background: rgba(255, 255, 255, 0.08);
@@ -265,7 +266,7 @@
     border-radius: 7px;
     height: 42px;
     flex: 1;
-    min-width: 28px;
+    min-width: 26px;
     max-width: 58px;
     display: flex;
     align-items: center;
@@ -696,12 +697,15 @@
 <div id="virtual-keyboard-drawer">
   <div class="vk-header">
     <span class="vk-title" id="vk-mode-title">Virtual Keyboard</span>
-    <div style="display: flex; gap: 8px;">
-      <button class="vk-close-btn" onclick="toggleKbMode()" id="vk-toggle-btn">123 / #</button>
+    <div style="display: flex; gap: 6px;">
+      <button class="vk-close-btn active" id="vk-btn-qwerty" onclick="setKbMode('qwerty')">ABC</button>
+      <button class="vk-close-btn" id="vk-btn-numpad" onclick="setKbMode('numpad')">123</button>
+      <button class="vk-close-btn" id="vk-btn-symbols" onclick="setKbMode('symbols')">!@#</button>
       <button class="vk-close-btn" onclick="closeVirtualKeyboard()">Done</button>
     </div>
   </div>
 
+  <!-- QWERTY LAYOUT -->
   <div id="vk-qwerty-layout" style="display: flex; flex-direction: column; gap: 6px;">
     <div class="vk-row">
       <div class="vk-key" onclick="typeKey('q')">q</div>
@@ -743,6 +747,7 @@
     </div>
   </div>
 
+  <!-- NUMPAD LAYOUT -->
   <div id="vk-numpad-layout" style="display: none; flex-direction: column; gap: 6px;">
     <div class="vk-row">
       <div class="vk-key" onclick="typeKey('1')">1</div>
@@ -766,6 +771,49 @@
       <div class="vk-key wide" onclick="backspaceKey()">BACK</div>
     </div>
   </div>
+
+  <!-- SYMBOLS & SPECIAL CHARACTERS LAYOUT -->
+  <div id="vk-symbols-layout" style="display: none; flex-direction: column; gap: 6px;">
+    <div class="vk-row">
+      <div class="vk-key" onclick="typeKey('!')">!</div>
+      <div class="vk-key" onclick="typeKey('@')">@</div>
+      <div class="vk-key" onclick="typeKey('#')">#</div>
+      <div class="vk-key" onclick="typeKey('$')">$</div>
+      <div class="vk-key" onclick="typeKey('%')">%</div>
+      <div class="vk-key" onclick="typeKey('^')">^</div>
+      <div class="vk-key" onclick="typeKey('&')">&amp;</div>
+      <div class="vk-key" onclick="typeKey('*')">*</div>
+      <div class="vk-key" onclick="typeKey('(')">(</div>
+      <div class="vk-key" onclick="typeKey(')')">)</div>
+    </div>
+    <div class="vk-row">
+      <div class="vk-key" onclick="typeKey('-')">-</div>
+      <div class="vk-key" onclick="typeKey('_')">_</div>
+      <div class="vk-key" onclick="typeKey('=')">=</div>
+      <div class="vk-key" onclick="typeKey('+')">+</div>
+      <div class="vk-key" onclick="typeKey('/')">/</div>
+      <div class="vk-key" onclick="typeKey('\\')">\</div>
+      <div class="vk-key" onclick="typeKey(':')">:</div>
+      <div class="vk-key" onclick="typeKey(';')">;</div>
+      <div class="vk-key" onclick="typeKey('?')">?</div>
+      <div class="vk-key" onclick="typeKey('~')">~</div>
+    </div>
+    <div class="vk-row">
+      <div class="vk-key" onclick="typeKey('[')">[</div>
+      <div class="vk-key" onclick="typeKey(']')">]</div>
+      <div class="vk-key" onclick="typeKey('{')">{</div>
+      <div class="vk-key" onclick="typeKey('}')">}</div>
+      <div class="vk-key" onclick="typeKey('<')">&lt;</div>
+      <div class="vk-key" onclick="typeKey('>')">&gt;</div>
+      <div class="vk-key" onclick="typeKey('&quot;')">&quot;</div>
+      <div class="vk-key" onclick="typeKey('\'')">'</div>
+      <div class="vk-key wide" onclick="backspaceKey()">BACK</div>
+    </div>
+    <div class="vk-row">
+      <div class="vk-key space" onclick="typeKey(' ')">SPACE</div>
+      <div class="vk-key wide accent" onclick="closeVirtualKeyboard()">DONE</div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -783,7 +831,6 @@
   let isSystemConfigured = false;
   let activeInputElem = null;
   let isShiftActive = false;
-  let isNumpadMode = false;
   let authenticatedPassword = null;
   let targetProtectedView = null;
   let trendsChart = null;
@@ -828,37 +875,42 @@
     document.body.addEventListener('focusin', (e) => {
       if (e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'radio') {
         activeInputElem = e.target;
-        openVirtualKeyboard(e.target.type === 'number');
+        openVirtualKeyboard(e.target.type === 'number' ? 'numpad' : 'qwerty');
       }
     });
 
     document.body.addEventListener('click', (e) => {
       if (e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'radio') {
         activeInputElem = e.target;
-        openVirtualKeyboard(e.target.type === 'number');
+        openVirtualKeyboard(e.target.type === 'number' ? 'numpad' : 'qwerty');
       }
     });
   }
 
-  function openVirtualKeyboard(preferNumpad = false) {
+  function openVirtualKeyboard(initialMode = 'qwerty') {
     const drawer = document.getElementById('virtual-keyboard-drawer');
     drawer.classList.add('active');
-    setKbMode(preferNumpad);
+    setKbMode(initialMode);
   }
 
   function closeVirtualKeyboard() {
     document.getElementById('virtual-keyboard-drawer').classList.remove('active');
   }
 
-  function setKbMode(numpad) {
-    isNumpadMode = numpad;
-    document.getElementById('vk-qwerty-layout').style.display = numpad ? 'none' : 'flex';
-    document.getElementById('vk-numpad-layout').style.display = numpad ? 'flex' : 'none';
-    document.getElementById('vk-mode-title').innerText = numpad ? 'Numeric Keypad' : 'Virtual Keyboard';
-    document.getElementById('vk-toggle-btn').innerText = numpad ? 'ABC' : '123 / #';
-  }
+  function setKbMode(mode) {
+    document.getElementById('vk-qwerty-layout').style.display = mode === 'qwerty' ? 'flex' : 'none';
+    document.getElementById('vk-numpad-layout').style.display = mode === 'numpad' ? 'flex' : 'none';
+    document.getElementById('vk-symbols-layout').style.display = mode === 'symbols' ? 'flex' : 'none';
 
-  function toggleKbMode() { setKbMode(!isNumpadMode); }
+    document.getElementById('vk-btn-qwerty').classList.toggle('active', mode === 'qwerty');
+    document.getElementById('vk-btn-numpad').classList.toggle('active', mode === 'numpad');
+    document.getElementById('vk-btn-symbols').classList.toggle('active', mode === 'symbols');
+
+    let modeTitle = 'Virtual Keyboard';
+    if (mode === 'numpad') modeTitle = 'Numeric Keypad';
+    if (mode === 'symbols') modeTitle = 'Symbols & Special Characters';
+    document.getElementById('vk-mode-title').innerText = modeTitle;
+  }
 
   function toggleShift() {
     isShiftActive = !isShiftActive;
