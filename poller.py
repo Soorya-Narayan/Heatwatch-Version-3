@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-HeatWatch 3 — Industrial Telemetry Data Poller
-Polls PPI AIME 8U RTD hardware via HTTP XML or generates simulation telemetry
-and writes time-series records to InfluxDB v2.
+HeatWatch 3 — Live Industrial Temperature Poller
+Polls PPI AIME 8U RTD hardware via HTTP XML (http://192.168.1.2/index.xml)
+and writes live time-series readings to InfluxDB v2.
 """
 
 import time
 import sys
-import random
 import xml.etree.ElementTree as ET
 import requests
 from influxdb_client import InfluxDBClient, Point
@@ -18,7 +17,7 @@ INFLUX_TOKEN  = "9upI6oc3KDqHU64Gfq_2JJ9zjC4hZId-4w6qbenxgIEpvJU0TdIDp3dzgjEV5g8
 INFLUX_ORG    = "heatwatch"
 INFLUX_BUCKET = "temperature_data"
 AIME_URL      = "http://192.168.1.2/index.xml"
-POLL_INTERVAL = 3
+POLL_INTERVAL = 2  # seconds
 
 client = None
 write_api = None
@@ -28,11 +27,10 @@ try:
     write_api = client.write_api(write_options=SYNCHRONOUS)
     print(f"[HeatWatch 3 Poller] Connected to InfluxDB at {INFLUX_URL}")
 except Exception as e:
-    print(f"[HeatWatch 3 Poller] InfluxDB init warning: {e}")
-
-simulated_temps = [82.5, 76.0, 14.2, 4.5, 3.8, 4.1, 48.0, 28.5]
+    print(f"[HeatWatch 3 Poller] InfluxDB init notice: {e}")
 
 def poll_aime_hardware():
+    """Poll PPI AIME 8U XML hardware interface"""
     resp = requests.get(AIME_URL, timeout=2.0)
     resp.raise_for_status()
     tree = ET.fromstring(resp.content)
@@ -48,17 +46,9 @@ def poll_aime_hardware():
                 pass
     return channels
 
-def generate_simulation():
-    channels = {}
-    for i in range(8):
-        ch_key = f"CH{i+1}"
-        jitter = (random.random() - 0.48) * 0.6
-        simulated_temps[i] = max(-10.0, min(120.0, simulated_temps[i] + jitter))
-        channels[ch_key] = round(simulated_temps[i], 1)
-    return channels
-
 def write_to_influx(data):
-    if not write_api:
+    """Write live 8 channel points to InfluxDB"""
+    if not write_api or not data:
         return
     points = []
     for ch_id, val in data.items():
@@ -72,30 +62,24 @@ def write_to_influx(data):
         points.append(point)
     try:
         write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=points)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[Poller Write Error] {e}")
 
 def main():
-    print("[HeatWatch 3 Poller] Starting telemetry collection loop...")
-    sim_mode = False
+    print(f"[HeatWatch 3 Poller] Starting LIVE PPI AIME 8U polling loop ({AIME_URL})...")
 
     while True:
         try:
-            if not sim_mode:
-                try:
-                    data = poll_aime_hardware()
-                    print(f"[AIME 8U Hardware] {data}")
-                except Exception:
-                    print(f"[Poller Notice] Hardware unreachable ({AIME_URL}). Running simulation mode.")
-                    sim_mode = True
-                    data = generate_simulation()
+            data = poll_aime_hardware()
+            if data:
+                print(f"[PPI AIME 8U Live Readings] {data}")
+                write_to_influx(data)
             else:
-                data = generate_simulation()
-                print(f"[Simulated Telemetry] {data}")
-
-            write_to_influx(data)
-
+                print(f"[Poller Warning] XML received from {AIME_URL} but no channel tags found.")
+        except requests.exceptions.RequestException as req_err:
+            print(f"[Poller Status] Waiting for PPI AIME 8U hardware connection at {AIME_URL}...")
         except KeyboardInterrupt:
+            print("\n[HeatWatch 3 Poller] Stopped.")
             sys.exit(0)
         except Exception as err:
             print(f"[Poller Error] {err}")

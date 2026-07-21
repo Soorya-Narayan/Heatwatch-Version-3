@@ -23,7 +23,6 @@ const SETUP_FILE    = path.join(__dirname, 'setup_config.json');
 const influxDB = new InfluxDB({ url: INFLUX_URL, token: INFLUX_TOKEN });
 let queryApi = influxDB.getQueryApi(INFLUX_ORG);
 
-// Default 8-Channel RTD Sensor Template
 const DEFAULT_SENSORS = [
   { id: 'CH1', name: 'Boiler_Temp',          label: 'Boiler Temperature',      hihi: 95, hi: 85, lo: 20, lolo: 10, unit: '°C' },
   { id: 'CH2', name: 'Heat_Exchanger_Inlet',  label: 'Heat Exchanger Inlet',    hihi: 90, hi: 80, lo: 15, lolo: 5,  unit: '°C' },
@@ -56,7 +55,6 @@ function saveSetupState(data) {
 
 let SYSTEM_STATE = loadSetupState();
 
-// CPU Calculation Helper
 function getCpuUsageTicks() {
   const cpus = os.cpus();
   let user = 0, nice = 0, sys = 0, idle = 0, irq = 0;
@@ -85,7 +83,6 @@ function getCpuUsagePercent() {
 // API Endpoints
 // -------------------------------------------------------------
 
-// 1. Get Wizard Setup Status
 app.get('/api/setup-status', (req, res) => {
   res.json({
     isConfigured: !!SYSTEM_STATE.isConfigured,
@@ -98,7 +95,6 @@ app.get('/api/setup-status', (req, res) => {
   });
 });
 
-// 2. Submit Initial Setup Wizard
 app.post('/api/setup', (req, res) => {
   const { username, role, accessLevel, password, sensors } = req.body;
 
@@ -117,7 +113,6 @@ app.post('/api/setup', (req, res) => {
   res.json({ ok: true });
 });
 
-// 3. Verify Password for Settings Access
 app.post('/api/verify-password', (req, res) => {
   const { password } = req.body;
   if (!SYSTEM_STATE.user || !SYSTEM_STATE.user.password) {
@@ -131,7 +126,6 @@ app.post('/api/verify-password', (req, res) => {
   }
 });
 
-// 4. Update Sensor Threshold Configurations
 app.get('/api/config', (req, res) => res.json(SYSTEM_STATE.sensors || DEFAULT_SENSORS));
 
 app.post('/api/config', (req, res) => {
@@ -150,7 +144,6 @@ app.post('/api/config', (req, res) => {
   }
 });
 
-// 5. System Hardware Diagnostics
 app.get('/api/system', (req, res) => {
   try {
     let cpuTemp = '--';
@@ -205,7 +198,6 @@ app.get('/api/system', (req, res) => {
   }
 });
 
-// 6. Query Time-Series History
 app.get('/api/history', async (req, res) => {
   const { range = '1h', sensor = 'all' } = req.query;
   let rangeStart = '-1h';
@@ -237,7 +229,6 @@ app.get('/api/history', async (req, res) => {
   }
 });
 
-// 7. Delete Historical Data (Protected)
 app.post('/api/delete', async (req, res) => {
   const { password, start, stop } = req.body;
 
@@ -270,25 +261,42 @@ app.post('/api/delete', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// Live Telemetry WebSocket Broadcasting
+// Live Telemetry Broadcaster (ONLY Real Data from InfluxDB / PPI)
 // -------------------------------------------------------------
-let simValues = (SYSTEM_STATE.sensors || DEFAULT_SENSORS).map((s, i) => (22.5 + i * 7.5));
-
-function broadcastTelemetry() {
+async function broadcastTelemetry() {
   if (wss.clients.size === 0) return;
 
   const now = new Date().toISOString();
   const currentSensors = SYSTEM_STATE.sensors || DEFAULT_SENSORS;
+  let latestReadings = {};
 
-  const packet = currentSensors.map((s, i) => {
-    let jitter = (Math.random() - 0.49) * 0.7;
-    simValues[i] = Math.max(-5, Math.min(115, simValues[i] + jitter));
+  try {
+    const q = `from(bucket: "${INFLUX_BUCKET}")
+      |> range(start: -30s)
+      |> filter(fn: (r) => r._measurement == "temperature")
+      |> last()`;
+    const rows = await queryApi.collectRows(q);
+
+    if (rows && rows.length > 0) {
+      rows.forEach(r => {
+        const ch = r.channel || r._field;
+        if (ch) latestReadings[ch] = r._value;
+      });
+    }
+  } catch (e) {
+    // InfluxDB or query error
+  }
+
+  const packet = currentSensors.map(s => {
+    const rawVal = latestReadings[s.id];
+    const hasReading = rawVal !== undefined && rawVal !== null;
 
     return {
       id: s.id,
       name: s.name,
       label: s.label,
-      val: simValues[i].toFixed(1),
+      val: hasReading ? parseFloat(rawVal).toFixed(1) : '--',
+      offline: !hasReading,
       hihi: s.hihi, hi: s.hi, lo: s.lo, lolo: s.lolo, unit: s.unit || '°C'
     };
   });

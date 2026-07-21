@@ -175,7 +175,6 @@
   }
   input:focus, select:focus { border-color: var(--accent-blue); }
 
-  /* COMPACT SINGLE SCREEN 8-CHANNEL CONFIGURATION TABLE */
   .sensor-config-table {
     width: 100%;
     border-collapse: collapse;
@@ -322,26 +321,27 @@
   }
 
   .nav-right { display: flex; align-items: center; gap: 12px; }
-  .status-pill { display: flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--accent-green); padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); animation: pulse-dot 2s infinite; }
-  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-  .settings-menu-btn {
-    background: rgba(59, 130, 246, 0.15);
+  .icon-nav-btn {
+    background: rgba(59, 130, 246, 0.12);
     border: 1px solid var(--border-glow);
-    color: var(--accent-blue);
-    padding: 8px 16px;
-    border-radius: 9px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
+    color: var(--text-main);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    cursor: pointer;
     transition: all 0.2s ease;
+    font-size: 1.2rem;
   }
 
-  .settings-menu-btn:hover { background: var(--accent-blue); color: #fff; }
+  .icon-nav-btn:hover {
+    background: var(--accent-blue);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+  }
 
   .view-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
   .view-panel { display: none; height: 100%; flex-direction: column; gap: 14px; }
@@ -375,6 +375,7 @@
   .status-normal { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
   .status-warning { background: rgba(245, 158, 11, 0.15); color: var(--accent-warning); border: 1px solid rgba(245, 158, 11, 0.3); }
   .status-alarm { background: rgba(239, 68, 68, 0.2); color: var(--accent-alarm); border: 1px solid rgba(239, 68, 68, 0.5); }
+  .status-offline { background: rgba(100, 116, 139, 0.2); color: var(--text-dim); border: 1px solid rgba(100, 116, 139, 0.3); }
 
   .temp-display { display: flex; align-items: baseline; gap: 6px; margin: 10px 0; }
   .temp-val { font-family: var(--font-heading); font-size: 2.8rem; font-weight: 800; letter-spacing: -1px; color: var(--text-main); line-height: 1; }
@@ -546,11 +547,7 @@
     </div>
 
     <div class="nav-right">
-      <div class="status-pill">
-        <div class="status-dot"></div>
-        <span>LIVE TELEMETRY</span>
-      </div>
-      <button class="settings-menu-btn" onclick="toggleDrawer(true)">⚙️ Settings & Navigation</button>
+      <button class="icon-nav-btn" onclick="toggleDrawer(true)" title="Settings & Menu">⚙️</button>
     </div>
   </header>
 
@@ -625,7 +622,7 @@
           <div><strong>Hardware System:</strong> <span id="sys-platform">--</span></div>
           <div><strong>System Uptime:</strong> <span id="sys-uptime">--</span></div>
           <div><strong>InfluxDB Data Size:</strong> <span id="sys-dbsize">--</span></div>
-          <div><strong>Hardware Interface:</strong> <span style="color: var(--accent-green);">PPI AIME 8U (HTTP XML)</span></div>
+          <div><strong>Hardware Interface:</strong> <span style="color: var(--accent-green);">PPI AIME 8U (HTTP XML @ 192.168.1.2)</span></div>
         </div>
       </div>
     </section>
@@ -894,7 +891,6 @@
     if (step === 3) renderWizardSensorItems();
   }
 
-  // ALL 8 SENSORS RENDERED IN ONE TABULAR GRID
   function renderWizardSensorItems() {
     const tbody = document.getElementById('wizard-sensor-rows');
     tbody.innerHTML = '';
@@ -983,15 +979,25 @@
     grid.innerHTML = '';
 
     sensors.forEach(s => {
-      const val = parseFloat(s.val);
+      const isOffline = s.offline || s.val === '--';
+      const val = isOffline ? '--' : parseFloat(s.val);
+      
       let statusClass = 'status-normal', statusText = 'NORMAL', cardAlarmClass = '';
 
-      if (val >= s.hihi) { statusClass = 'status-alarm'; statusText = 'CRITICAL HIHI'; cardAlarmClass = 'alarm-hihi'; }
-      else if (val <= s.lolo) { statusClass = 'status-alarm'; statusText = 'CRITICAL LOLO'; cardAlarmClass = 'alarm-lolo'; }
-      else if (val >= s.hi) { statusClass = 'status-warning'; statusText = 'WARNING HI'; }
-      else if (val <= s.lo) { statusClass = 'status-warning'; statusText = 'WARNING LO'; }
+      if (isOffline) {
+        statusClass = 'status-offline';
+        statusText = 'FAULT / OFFLINE';
+      } else if (val >= s.hihi) {
+        statusClass = 'status-alarm'; statusText = 'CRITICAL HIHI'; cardAlarmClass = 'alarm-hihi';
+      } else if (val <= s.lolo) {
+        statusClass = 'status-alarm'; statusText = 'CRITICAL LOLO'; cardAlarmClass = 'alarm-lolo';
+      } else if (val >= s.hi) {
+        statusClass = 'status-warning'; statusText = 'WARNING HI';
+      } else if (val <= s.lo) {
+        statusClass = 'status-warning'; statusText = 'WARNING LO';
+      }
 
-      const pct = Math.max(0, Math.min(100, ((val - s.lolo) / (s.hihi - s.lolo)) * 100));
+      const pct = isOffline ? 0 : Math.max(0, Math.min(100, ((val - s.lolo) / (s.hihi - s.lolo)) * 100));
 
       const card = document.createElement('div');
       card.className = `channel-card ${cardAlarmClass}`;
