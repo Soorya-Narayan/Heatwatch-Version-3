@@ -79,38 +79,73 @@ function getCpuUsagePercent() {
   return Math.round(100 * (1 - idleDiff / totalDiff));
 }
 
+// Robust Universal PPI AIME 8U Parser (HTML / XML)
+function parsePpiResponse(text) {
+  const readings = {};
+  if (!text) return readings;
+
+  // 1. Try XML format <CH1>28.2</CH1>
+  for (let i = 1; i <= 8; i++) {
+    const chKey = `CH${i}`;
+    const xmlMatch = text.match(new RegExp(`<${chKey}>\\s*(-?\\d+(?:\\.\\d+)?)\\s*</${chKey}>`, 'i'));
+    if (xmlMatch) {
+      readings[chKey] = parseFloat(xmlMatch[1]);
+    }
+  }
+  if (Object.keys(readings).length === 8) return readings;
+
+  // 2. Try HTML table / text matching (CH1 followed by numbers)
+  for (let i = 1; i <= 8; i++) {
+    const chKey = `CH${i}`;
+    const regex = new RegExp(`${chKey}[^0-9\\-]*?(-?\\d+(?:\\.\\d+)?)`, 'i');
+    const match = text.match(regex);
+    if (match) {
+      readings[chKey] = parseFloat(match[1]);
+    }
+  }
+  return readings;
+}
+
 // Direct HTTP Polling from PPI AIME 8U Hardware at 192.168.1.2
 async function fetchPpiHardwareDirect() {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 1500);
-    const res = await fetch('http://192.168.1.2/', { signal: controller.signal });
-    clearTimeout(timeout);
-    if (!res.ok) return null;
-    const html = await res.text();
-    
-    const readings = {};
-    for (let i = 1; i <= 8; i++) {
-      const chKey = `CH${i}`;
-      const regex = new RegExp(`${chKey}\\s*</t[dh]>\\s*<td[^>]*>\\s*(-?\\d+(?:\\.\\d+)?)`, 'i');
-      const match = html.match(regex);
-      if (match) {
-        readings[chKey] = parseFloat(match[1]);
-      } else {
-        const regexAlt = new RegExp(`${chKey}.*?(-?\\d+\\.\\d+|-?\\d+)`, 'is');
-        const matchAlt = html.match(regexAlt);
-        if (matchAlt) readings[chKey] = parseFloat(matchAlt[1]);
+  const urls = [
+    'http://192.168.1.2/',
+    'http://192.168.1.2/index.html',
+    'http://192.168.1.2/index.xml',
+    'http://192.168.1.2/monitoring.html'
+  ];
+
+  for (const url of urls) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (res.ok) {
+        const text = await res.text();
+        const readings = parsePpiResponse(text);
+        if (Object.keys(readings).length > 0) {
+          return readings;
+        }
       }
-    }
-    return Object.keys(readings).length > 0 ? readings : null;
-  } catch(e) {
-    return null;
+    } catch(e) {}
   }
+  return null;
 }
 
 // -------------------------------------------------------------
 // API Endpoints
 // -------------------------------------------------------------
+
+app.get('/api/ppi-debug', async (req, res) => {
+  const readings = await fetchPpiHardwareDirect();
+  res.json({
+    timestamp: new Date().toISOString(),
+    success: !!readings,
+    readings: readings || 'Hardware unreachable or no channels parsed'
+  });
+});
 
 app.get('/api/setup-status', (req, res) => {
   res.json({
@@ -290,7 +325,7 @@ app.post('/api/delete', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// Fail-Safe Live Telemetry Broadcaster
+// Live Telemetry Broadcaster
 // -------------------------------------------------------------
 async function broadcastTelemetry() {
   if (wss.clients.size === 0) return;
@@ -299,7 +334,7 @@ async function broadcastTelemetry() {
   const currentSensors = SYSTEM_STATE.sensors || DEFAULT_SENSORS;
   let latestReadings = {};
 
-  // Try 1: Query InfluxDB
+  // Method 1: Query InfluxDB
   try {
     const q = `from(bucket: "${INFLUX_BUCKET}")
       |> range(start: -30s)
@@ -315,7 +350,7 @@ async function broadcastTelemetry() {
     }
   } catch (e) {}
 
-  // Try 2: Direct HTTP fetch from PPI AIME 8U if InfluxDB has no recent rows
+  // Method 2: Direct HTTP fetch from PPI hardware (192.168.1.2) if InfluxDB empty
   if (Object.keys(latestReadings).length === 0) {
     const directReadings = await fetchPpiHardwareDirect();
     if (directReadings) {
