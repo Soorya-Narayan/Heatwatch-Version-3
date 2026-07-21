@@ -65,7 +65,42 @@
   }
 
   /* --------------------------------------------------------- */
-  /* APPLE-INSPIRED FIRST BOOT SETUP WIZARD STYLES             */
+  /* 1. APPLE-STYLE STANDALONE BOOT OVERLAY                    */
+  /* --------------------------------------------------------- */
+  #apple-boot-screen {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #000000;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+    cursor: pointer;
+  }
+
+  #apple-boot-screen.fade-out {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .apple-boot-logo {
+    width: 110px;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.75));
+    animation: apple-breath 3s infinite ease-in-out;
+  }
+
+  @keyframes apple-breath {
+    0%, 100% { filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.5)); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 45px rgba(6, 182, 212, 0.9)); transform: scale(1.04); }
+  }
+
+  /* --------------------------------------------------------- */
+  /* 2. SETUP WIZARD STYLES                                    */
   /* --------------------------------------------------------- */
   #wizard-container {
     display: flex;
@@ -89,31 +124,18 @@
     box-shadow: var(--shadow-main);
     width: 90%;
     max-width: 680px;
-    padding: 36px;
+    padding: 32px;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 20px;
+    gap: 18px;
     animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @keyframes fade-in-up {
     0% { opacity: 0; transform: translateY(20px); }
     100% { opacity: 1; transform: translateY(0); }
-  }
-
-  .apple-logo-glow {
-    width: 96px;
-    height: auto;
-    object-fit: contain;
-    filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.6));
-    animation: pulse-glow 3s infinite ease-in-out;
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% { filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); transform: scale(1); }
-    50% { filter: drop-shadow(0 0 35px rgba(6, 182, 212, 0.8)); transform: scale(1.03); }
   }
 
   .wizard-title {
@@ -127,49 +149,19 @@
   }
 
   .wizard-subtitle {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     color: var(--text-muted);
     max-width: 480px;
     line-height: 1.5;
   }
 
-  .wizard-progress {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-
-  .wizard-dot {
-    width: 32px;
-    height: 4px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.1);
-    transition: background 0.3s ease;
-  }
-
+  .wizard-progress { display: flex; gap: 8px; margin-bottom: 4px; }
+  .wizard-dot { width: 32px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); transition: background 0.3s ease; }
   .wizard-dot.active { background: var(--accent-blue); box-shadow: 0 0 8px var(--accent-blue); }
 
-  .form-grid {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    text-align: left;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .form-group label {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
+  .form-grid { width: 100%; display: flex; flex-direction: column; gap: 12px; text-align: left; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
   input, select {
     background: rgba(0, 0, 0, 0.3);
@@ -181,16 +173,13 @@
     outline: none;
     transition: border-color 0.2s ease;
   }
-
-  input:focus, select:focus {
-    border-color: var(--accent-blue);
-  }
+  input:focus, select:focus { border-color: var(--accent-blue); }
 
   .sensor-setup-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    max-height: 340px;
+    gap: 10px;
+    max-height: 320px;
     overflow-y: auto;
     width: 100%;
     padding-right: 4px;
@@ -200,32 +189,23 @@
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    padding: 12px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     text-align: left;
   }
 
-  .thresh-inputs {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-  }
-
-  .thresh-inputs input {
-    padding: 6px 8px;
-    font-size: 0.78rem;
-    text-align: center;
-  }
+  .thresh-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .thresh-inputs input { padding: 6px 8px; font-size: 0.78rem; text-align: center; }
 
   .btn {
     background: var(--accent-blue);
     color: #ffffff;
     border: none;
-    padding: 12px 24px;
-    border-radius: 10px;
-    font-size: 0.92rem;
+    padding: 10px 20px;
+    border-radius: 9px;
+    font-size: 0.9rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -234,10 +214,72 @@
 
   .btn:hover { opacity: 0.95; transform: translateY(-1px); }
   .btn-secondary { background: rgba(255, 255, 255, 0.08); color: var(--text-main); box-shadow: none; }
-  .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
 
   /* --------------------------------------------------------- */
-  /* MAIN DASHBOARD STYLES                                     */
+  /* 3. DIGITAL TOUCHSCREEN VIRTUAL KEYBOARD                   */
+  /* --------------------------------------------------------- */
+  #virtual-keyboard-drawer {
+    position: fixed;
+    bottom: -320px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 760px;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--border-color);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+    z-index: 2500;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  #virtual-keyboard-drawer.active { bottom: 0; }
+
+  .vk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 8px 4px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .vk-title { font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; }
+  .vk-close-btn { background: rgba(255, 255, 255, 0.1); border: none; color: #fff; padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+
+  .vk-row { display: flex; justify-content: center; gap: 6px; width: 100%; }
+
+  .vk-key {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-main);
+    border-radius: 7px;
+    height: 42px;
+    flex: 1;
+    min-width: 28px;
+    max-width: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease;
+  }
+
+  .vk-key:active { background: var(--accent-blue); transform: scale(0.94); }
+  .vk-key.wide { max-width: 90px; font-size: 0.82rem; font-weight: 700; }
+  .vk-key.space { max-width: 260px; }
+  .vk-key.accent { background: var(--accent-blue); color: #fff; }
+
+  /* --------------------------------------------------------- */
+  /* 4. MAIN DASHBOARD STYLES                                  */
   /* --------------------------------------------------------- */
   #main-app {
     display: flex;
@@ -261,18 +303,8 @@
     box-shadow: var(--shadow-main);
   }
 
-  .nav-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .nav-logo {
-    height: 36px;
-    width: auto;
-    object-fit: contain;
-    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
-  }
+  .nav-left { display: flex; align-items: center; gap: 12px; }
+  .nav-logo { height: 36px; width: auto; object-fit: contain; filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4)); }
 
   .nav-center h1 {
     font-family: var(--font-heading);
@@ -284,32 +316,9 @@
     -webkit-text-fill-color: transparent;
   }
 
-  .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .status-pill {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    color: var(--accent-green);
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  .status-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--accent-green);
-    box-shadow: 0 0 8px var(--accent-green);
-    animation: pulse-dot 2s infinite;
-  }
-
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .status-pill { display: flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--accent-green); padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); animation: pulse-dot 2s infinite; }
   @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
   .settings-menu-btn {
@@ -327,37 +336,13 @@
     transition: all 0.2s ease;
   }
 
-  .settings-menu-btn:hover {
-    background: var(--accent-blue);
-    color: #fff;
-  }
+  .settings-menu-btn:hover { background: var(--accent-blue); color: #fff; }
 
-  /* Main View Container */
-  .view-container {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .view-panel {
-    display: none;
-    height: 100%;
-    flex-direction: column;
-    gap: 14px;
-  }
-
+  .view-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .view-panel { display: none; height: 100%; flex-direction: column; gap: 14px; }
   .view-panel.active { display: flex; }
 
-  /* Telemetry Grid (8 Channels) */
-  .telemetry-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 12px;
-    flex: 1;
-  }
-
+  .telemetry-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 12px; flex: 1; }
   @media (max-width: 1100px) { .telemetry-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 650px) { .telemetry-grid { grid-template-columns: 1fr; } }
 
@@ -374,13 +359,7 @@
   }
 
   .channel-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
-
-  .channel-card.alarm-hihi, .channel-card.alarm-lolo {
-    border-color: var(--accent-alarm);
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
-    animation: alarm-glow 1.5s infinite alternate;
-  }
-
+  .channel-card.alarm-hihi, .channel-card.alarm-lolo { border-color: var(--accent-alarm); box-shadow: 0 0 20px rgba(239, 68, 68, 0.25); animation: alarm-glow 1.5s infinite alternate; }
   @keyframes alarm-glow { 0% { background: rgba(239, 68, 68, 0.08); } 100% { background: rgba(239, 68, 68, 0.2); } }
 
   .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -400,34 +379,14 @@
   .threshold-bar-fill { height: 100%; border-radius: 3px; width: 0%; transition: width 0.5s ease; background: var(--accent-blue); }
   .card-meta { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-top: 6px; }
 
-  /* Drawer / Modal Navigation Menu */
-  .drawer-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.65);
-    backdrop-filter: blur(8px);
-    z-index: 500;
-  }
-
+  .drawer-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(8px); z-index: 500; }
   .drawer-overlay.active { display: block; }
 
   .nav-drawer {
-    position: fixed;
-    top: 0; right: -360px;
-    width: 320px;
-    height: 100vh;
-    background: var(--bg-surface);
-    border-left: 1px solid var(--border-color);
-    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
-    z-index: 600;
-    display: flex;
-    flex-direction: column;
-    padding: 24px 20px;
-    gap: 16px;
-    transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    position: fixed; top: 0; right: -360px; width: 320px; height: 100vh;
+    background: var(--bg-surface); border-left: 1px solid var(--border-color); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    z-index: 600; display: flex; flex-direction: column; padding: 24px 20px; gap: 16px; transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
-
   .nav-drawer.active { right: 0; }
 
   .drawer-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; }
@@ -435,75 +394,33 @@
   .close-drawer-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; }
 
   .drawer-menu { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-
-  .menu-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-radius: 10px;
-    color: var(--text-muted);
-    font-weight: 600;
-    font-size: 0.9rem;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    text-align: left;
-    transition: all 0.2s ease;
-  }
-
+  .menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; background: transparent; border: none; cursor: pointer; text-align: left; transition: all 0.2s ease; }
   .menu-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-main); }
   .menu-item.active { background: var(--accent-blue); color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
 
-  /* Modal Dialog for Password Protection */
-  .modal-box {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(10px);
-    z-index: 1200;
-    align-items: center;
-    justify-content: center;
-  }
-
+  .modal-box { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); z-index: 1200; align-items: center; justify-content: center; }
   .modal-box.active { display: flex; }
 
-  .modal-card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 28px;
-    width: 90%;
-    max-width: 420px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    box-shadow: var(--shadow-main);
-    text-align: center;
-  }
+  .modal-card { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 16px; padding: 28px; width: 90%; max-width: 420px; display: flex; flex-direction: column; gap: 16px; box-shadow: var(--shadow-main); text-align: center; }
 
-  .chart-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--card-radius);
-    padding: 16px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
+  .chart-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--card-radius); padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
 </style>
 </head>
 <body>
 
 <!-- ========================================================= -->
-<!-- 1. APPLE-INSPIRED FIRST BOOT SETUP WIZARD                 -->
+<!-- 1. APPLE-STYLE STANDALONE BOOT SCREEN                     -->
 <!-- ========================================================= -->
-<div id="wizard-container">
+<div id="apple-boot-screen" onclick="dismissAppleBootScreen()">
+  <img src="goose_logo.png" alt="Goose Logo" class="apple-boot-logo" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'90\' height=\'90\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%233b82f6\' stroke-width=\'2\'><circle cx=\'12\' cy=\'12\' r=\'10\'/></svg>'">
+</div>
+
+
+<!-- ========================================================= -->
+<!-- 2. SETUP WIZARD                                           -->
+<!-- ========================================================= -->
+<div id="wizard-container" style="display: none;">
   <div class="wizard-card">
-    <img src="goose_logo.png" alt="Goose Logo" class="apple-logo-glow" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%233b82f6\' stroke-width=\'2\'><circle cx=\'12\' cy=\'12\' r=\'10\'/></svg>'">
-    
     <div class="wizard-progress">
       <div class="wizard-dot active" id="dot-1"></div>
       <div class="wizard-dot" id="dot-2"></div>
@@ -511,14 +428,14 @@
       <div class="wizard-dot" id="dot-4"></div>
     </div>
 
-    <!-- Step 1: Welcome & Ambient Start -->
+    <!-- Step 1: Welcome -->
     <div id="wizard-step-1" style="display: flex; flex-direction: column; align-items: center; gap: 14px;">
       <h2 class="wizard-title">Welcome to HeatWatch</h2>
       <p class="wizard-subtitle">Next-generation industrial telemetry platform by Goose Industrial Solutions. Let's configure your system credentials and RTD sensors.</p>
       <button class="btn" style="margin-top: 10px;" onclick="goToWizardStep(2)">Get Started →</button>
     </div>
 
-    <!-- Step 2: User Credentials & Access Setup -->
+    <!-- Step 2: Credentials -->
     <div id="wizard-step-2" style="display: none; width: 100%; flex-direction: column; gap: 14px;">
       <h2 class="wizard-title">Setup Administrator Profile</h2>
       <p class="wizard-subtitle">Create your admin account and set a security password to protect settings.</p>
@@ -563,14 +480,12 @@
       </div>
     </div>
 
-    <!-- Step 3: 8 RTD Sensors Threshold Setup -->
+    <!-- Step 3: RTD Sensors -->
     <div id="wizard-step-3" style="display: none; width: 100%; flex-direction: column; gap: 14px;">
       <h2 class="wizard-title">Configure 8 RTD Sensors</h2>
       <p class="wizard-subtitle">Set names and threshold limits (HiHi, Hi, Lo, LoLo) for your PPI AIME 8U sensors.</p>
 
-      <div class="sensor-setup-grid" id="wizard-sensor-items">
-        <!-- Rendered via JS -->
-      </div>
+      <div class="sensor-setup-grid" id="wizard-sensor-items"></div>
 
       <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; margin-top: 10px;">
         <button class="btn btn-secondary" onclick="goToWizardStep(2)">Back</button>
@@ -578,7 +493,7 @@
       </div>
     </div>
 
-    <!-- Step 4: Summary & Confirmation -->
+    <!-- Step 4: Confirmation -->
     <div id="wizard-step-4" style="display: none; width: 100%; flex-direction: column; gap: 14px;">
       <h2 class="wizard-title">Review & Complete Setup</h2>
       <p class="wizard-subtitle">Verify your configuration details before launching the HeatWatch telemetry system.</p>
@@ -594,16 +509,14 @@
         <button class="btn" onclick="completeWizardSetup()">Finish Setup & Launch Dashboard ✓</button>
       </div>
     </div>
-
   </div>
 </div>
 
 
 <!-- ========================================================= -->
-<!-- 2. MAIN HEATWATCH TELEMETRY DASHBOARD                     -->
+<!-- 3. MAIN DASHBOARD                                         -->
 <!-- ========================================================= -->
 <div id="main-app" style="display: none;">
-  <!-- Navbar -->
   <header class="navbar">
     <div class="nav-left">
       <img src="goose_logo.png" alt="Goose Logo" class="nav-logo" onerror="this.style.display='none'">
@@ -622,17 +535,11 @@
     </div>
   </header>
 
-  <!-- Main Views Container -->
   <main class="view-container">
-    
-    <!-- 1. LIVE MONITOR (HOMESCREEN) -->
     <section id="view-live" class="view-panel active">
-      <div class="telemetry-grid" id="main-sensor-grid">
-        <!-- Rendered via JS -->
-      </div>
+      <div class="telemetry-grid" id="main-sensor-grid"></div>
     </section>
 
-    <!-- 2. TRENDS -->
     <section id="view-trends" class="view-panel">
       <div class="chart-card">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -649,7 +556,6 @@
       </div>
     </section>
 
-    <!-- 3. HISTORY LOGS -->
     <section id="view-history" class="view-panel">
       <div class="chart-card">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -663,14 +569,12 @@
             </select>
             <button class="btn" onclick="fetchHistory()">Query Logs</button>
           </div>
-
           <div style="display: flex; gap: 6px;">
             <button class="btn btn-secondary" onclick="exportData('csv')">CSV</button>
             <button class="btn btn-secondary" onclick="exportData('excel')">Excel</button>
             <button class="btn btn-secondary" onclick="exportData('pdf')">PDF</button>
           </div>
         </div>
-
         <div style="overflow-y: auto; flex: 1; margin-top: 10px;">
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
@@ -689,7 +593,6 @@
       </div>
     </section>
 
-    <!-- 4. USAGE & PI HARDWARE STATS -->
     <section id="view-usage" class="view-panel">
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
         <div class="chart-card"><span style="font-size: 0.75rem; color: var(--text-dim);">CPU LOAD</span><div style="font-size: 2rem; font-weight: 800; color: var(--accent-cyan);" id="sys-cpu">0%</div></div>
@@ -708,18 +611,13 @@
       </div>
     </section>
 
-    <!-- 5. SETTINGS (PASSWORD PROTECTED) -->
     <section id="view-settings" class="view-panel">
       <div class="chart-card">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h3>Settings & Data Management (Admin Protected)</h3>
           <button class="btn" onclick="saveAdminSettings()">Save All Changes</button>
         </div>
-
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; overflow-y: auto; margin-top: 12px;" id="protected-settings-grid">
-          <!-- Rendered via JS -->
-        </div>
-
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; overflow-y: auto; margin-top: 12px;" id="protected-settings-grid"></div>
         <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center;">
           <div>
             <strong style="color: var(--accent-alarm);">Danger Zone: Historical Data Clearance</strong>
@@ -733,16 +631,13 @@
   </main>
 </div>
 
-<!-- ========================================================= -->
-<!-- 3. DRAWER & PASSWORD MODAL                                -->
-<!-- ========================================================= -->
+<!-- Drawer Menu -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer(false)"></div>
 <aside class="nav-drawer" id="nav-drawer">
   <div class="drawer-header">
     <h3>HeatWatch Menu</h3>
     <button class="close-drawer-btn" onclick="toggleDrawer(false)">✕</button>
   </div>
-
   <nav class="drawer-menu">
     <button class="menu-item active" onclick="selectView('live', this)">📊 Live Telemetry</button>
     <button class="menu-item" onclick="selectView('trends', this)">📈 Trends</button>
@@ -750,13 +645,12 @@
     <button class="menu-item" onclick="selectView('usage', this)">💻 System & Usage</button>
     <button class="menu-item" onclick="requestProtectedView('settings', this)">⚙️ Protected Settings 🔒</button>
   </nav>
-
   <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-color); font-size: 0.75rem; color: var(--text-dim);">
     Logged in as: <strong id="drawer-user-display" style="color: var(--text-main);">Administrator</strong>
   </div>
 </aside>
 
-<!-- Password Verification Modal -->
+<!-- Password Modal -->
 <div class="modal-box" id="password-modal">
   <div class="modal-card">
     <h3 style="font-family: var(--font-heading); font-size: 1.3rem;">Authentication Required</h3>
@@ -765,6 +659,84 @@
     <div style="display: flex; gap: 10px; justify-content: center; margin-top: 6px;">
       <button class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
       <button class="btn" onclick="submitPasswordVerification()">Authenticate</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- 4. BUILT-IN DIGITAL TOUCHSCREEN VIRTUAL KEYBOARD          -->
+<!-- ========================================================= -->
+<div id="virtual-keyboard-drawer">
+  <div class="vk-header">
+    <span class="vk-title" id="vk-mode-title">Virtual Keyboard</span>
+    <div style="display: flex; gap: 8px;">
+      <button class="vk-close-btn" onclick="toggleKbMode()" id="vk-toggle-btn">123 / #</button>
+      <button class="vk-close-btn" onclick="closeVirtualKeyboard()">Done ✓</button>
+    </div>
+  </div>
+
+  <div id="vk-qwerty-layout" style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="vk-row">
+      <div class="vk-key" onclick="typeKey('q')">q</div>
+      <div class="vk-key" onclick="typeKey('w')">w</div>
+      <div class="vk-key" onclick="typeKey('e')">e</div>
+      <div class="vk-key" onclick="typeKey('r')">r</div>
+      <div class="vk-key" onclick="typeKey('t')">t</div>
+      <div class="vk-key" onclick="typeKey('y')">y</div>
+      <div class="vk-key" onclick="typeKey('u')">u</div>
+      <div class="vk-key" onclick="typeKey('i')">i</div>
+      <div class="vk-key" onclick="typeKey('o')">o</div>
+      <div class="vk-key" onclick="typeKey('p')">p</div>
+    </div>
+    <div class="vk-row">
+      <div class="vk-key" onclick="typeKey('a')">a</div>
+      <div class="vk-key" onclick="typeKey('s')">s</div>
+      <div class="vk-key" onclick="typeKey('d')">d</div>
+      <div class="vk-key" onclick="typeKey('f')">f</div>
+      <div class="vk-key" onclick="typeKey('g')">g</div>
+      <div class="vk-key" onclick="typeKey('h')">h</div>
+      <div class="vk-key" onclick="typeKey('j')">j</div>
+      <div class="vk-key" onclick="typeKey('k')">k</div>
+      <div class="vk-key" onclick="typeKey('l')">l</div>
+    </div>
+    <div class="vk-row">
+      <div class="vk-key wide" onclick="toggleShift()" id="vk-shift-btn">⇧ SHIFT</div>
+      <div class="vk-key" onclick="typeKey('z')">z</div>
+      <div class="vk-key" onclick="typeKey('x')">x</div>
+      <div class="vk-key" onclick="typeKey('c')">c</div>
+      <div class="vk-key" onclick="typeKey('v')">v</div>
+      <div class="vk-key" onclick="typeKey('b')">b</div>
+      <div class="vk-key" onclick="typeKey('n')">n</div>
+      <div class="vk-key" onclick="typeKey('m')">m</div>
+      <div class="vk-key wide" onclick="backspaceKey()">⌫ BACK</div>
+    </div>
+    <div class="vk-row">
+      <div class="vk-key space" onclick="typeKey(' ')">SPACE</div>
+      <div class="vk-key wide accent" onclick="closeVirtualKeyboard()">DONE ✓</div>
+    </div>
+  </div>
+
+  <div id="vk-numpad-layout" style="display: none; flex-direction: column; gap: 6px;">
+    <div class="vk-row">
+      <div class="vk-key" onclick="typeKey('1')">1</div>
+      <div class="vk-key" onclick="typeKey('2')">2</div>
+      <div class="vk-key" onclick="typeKey('3')">3</div>
+    </div>
+    <div class="vk-row">
+      <div class="vk-key" onclick="typeKey('4')">4</div>
+      <div class="vk-key" onclick="typeKey('5')">5</div>
+      <div class="vk-key" onclick="typeKey('6')">6</div>
+    </div>
+    <div class="vk-row">
+      <div class="vk-key" onclick="typeKey('7')">7</div>
+      <div class="vk-key" onclick="typeKey('8')">8</div>
+      <div class="vk-key" onclick="typeKey('9')">9</div>
+    </div>
+    <div class="vk-row">
+      <div class="vk-key" onclick="typeKey('-')">-</div>
+      <div class="vk-key" onclick="typeKey('0')">0</div>
+      <div class="vk-key" onclick="typeKey('.')">.</div>
+      <div class="vk-key wide" onclick="backspaceKey()">⌫</div>
     </div>
   </div>
 </div>
@@ -781,32 +753,126 @@
     { id: 'CH8', name: 'Ambient_Plant_Room',   label: 'Ambient Plant Room',     hihi: 45, hi: 38, lo: 10, lolo: 5,  unit: '°C' }
   ];
 
+  let isSystemConfigured = false;
+  let activeInputElem = null;
+  let isShiftActive = false;
+  let isNumpadMode = false;
   let authenticatedPassword = null;
   let targetProtectedView = null;
   let trendsChart = null;
   let historyData = [];
 
-  // Init Check
+  // Standalone Apple Boot Screen Timer
   window.onload = async () => {
+    setupVirtualKeyboardListeners();
+
     try {
       const res = await fetch('/api/setup-status');
       const data = await res.json();
-      
-      if (data.isConfigured) {
-        document.getElementById('wizard-container').style.display = 'none';
-        document.getElementById('main-app').style.display = 'flex';
-        if (data.user) document.getElementById('drawer-user-display').innerText = data.user.username;
-        if (data.sensors) wizardSensors = data.sensors;
-        initWebSocket();
-      } else {
-        renderWizardSensorItems();
-      }
-    } catch(e) {
-      renderWizardSensorItems();
-    }
+      isSystemConfigured = data.isConfigured;
+
+      if (data.user) document.getElementById('drawer-user-display').innerText = data.user.username;
+      if (data.sensors) wizardSensors = data.sensors;
+    } catch(e) {}
+
+    // Auto dismiss boot logo screen after 3.5 seconds
+    setTimeout(() => {
+      dismissAppleBootScreen();
+    }, 3500);
   };
 
-  // Wizard Step Switcher
+  function dismissAppleBootScreen() {
+    const bootScreen = document.getElementById('apple-boot-screen');
+    if (!bootScreen || bootScreen.classList.contains('fade-out')) return;
+
+    bootScreen.classList.add('fade-out');
+
+    if (isSystemConfigured) {
+      document.getElementById('wizard-container').style.display = 'none';
+      document.getElementById('main-app').style.display = 'flex';
+      initWebSocket();
+    } else {
+      document.getElementById('wizard-container').style.display = 'flex';
+      renderWizardSensorItems();
+    }
+  }
+
+  // Virtual Keyboard Integration
+  function setupVirtualKeyboardListeners() {
+    document.body.addEventListener('focusin', (e) => {
+      if (e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'radio') {
+        activeInputElem = e.target;
+        openVirtualKeyboard(e.target.type === 'number');
+      }
+    });
+
+    document.body.addEventListener('click', (e) => {
+      if (e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'radio') {
+        activeInputElem = e.target;
+        openVirtualKeyboard(e.target.type === 'number');
+      }
+    });
+  }
+
+  function openVirtualKeyboard(preferNumpad = false) {
+    const drawer = document.getElementById('virtual-keyboard-drawer');
+    drawer.classList.add('active');
+    setKbMode(preferNumpad);
+  }
+
+  function closeVirtualKeyboard() {
+    document.getElementById('virtual-keyboard-drawer').classList.remove('active');
+  }
+
+  function setKbMode(numpad) {
+    isNumpadMode = numpad;
+    document.getElementById('vk-qwerty-layout').style.display = numpad ? 'none' : 'flex';
+    document.getElementById('vk-numpad-layout').style.display = numpad ? 'flex' : 'none';
+    document.getElementById('vk-mode-title').innerText = numpad ? 'Numeric Keypad' : 'Virtual Keyboard';
+    document.getElementById('vk-toggle-btn').innerText = numpad ? 'ABC' : '123 / #';
+  }
+
+  function toggleKbMode() { setKbMode(!isNumpadMode); }
+
+  function toggleShift() {
+    isShiftActive = !isShiftActive;
+    document.getElementById('vk-shift-btn').style.background = isShiftActive ? 'var(--accent-blue)' : 'rgba(255,255,255,0.08)';
+  }
+
+  function typeKey(char) {
+    if (!activeInputElem) return;
+    let typedChar = char;
+    if (isShiftActive && char.length === 1 && char.match(/[a-z]/i)) {
+      typedChar = char.toUpperCase();
+      toggleShift();
+    }
+    
+    const start = activeInputElem.selectionStart || activeInputElem.value.length;
+    const end = activeInputElem.selectionEnd || activeInputElem.value.length;
+    const val = activeInputElem.value;
+    
+    activeInputElem.value = val.substring(0, start) + typedChar + val.substring(end);
+    activeInputElem.setSelectionRange(start + typedChar.length, start + typedChar.length);
+    activeInputElem.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function backspaceKey() {
+    if (!activeInputElem) return;
+    const start = activeInputElem.selectionStart || activeInputElem.value.length;
+    const end = activeInputElem.selectionEnd || activeInputElem.value.length;
+    const val = activeInputElem.value;
+    
+    if (start === end && start > 0) {
+      activeInputElem.value = val.substring(0, start - 1) + val.substring(end);
+      activeInputElem.setSelectionRange(start - 1, start - 1);
+    } else {
+      activeInputElem.value = val.substring(0, start) + val.substring(end);
+      activeInputElem.setSelectionRange(start, start);
+    }
+    activeInputElem.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  // Wizard Handler Functions
   function goToWizardStep(step) {
     for (let i = 1; i <= 4; i++) {
       document.getElementById(`wizard-step-${i}`).style.display = i === step ? 'flex' : 'none';
@@ -843,6 +909,10 @@
 
     if (!user || !pass) return alert('Please enter both username and password!');
     if (pass !== confirm) return alert('Passwords do not match!');
+
+    document.getElementById('sum-user').innerText = user;
+    document.getElementById('sum-role').innerText = document.getElementById('wz-role').value;
+    document.getElementById('sum-access').innerText = document.getElementById('wz-access').value;
 
     goToWizardStep(3);
   }
@@ -881,7 +951,6 @@
     }
   }
 
-  // Dashboard Telemetry WebSocket
   function initWebSocket() {
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${protocol}//${location.host}`);
@@ -929,7 +998,6 @@
     });
   }
 
-  // Navigation Drawer & Password Protection
   function toggleDrawer(open) {
     document.getElementById('nav-drawer').classList.toggle('active', open);
     document.getElementById('drawer-overlay').classList.toggle('active', open);
