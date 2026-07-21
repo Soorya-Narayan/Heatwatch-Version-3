@@ -8,7 +8,7 @@
 <!-- Fonts & External Libraries -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -374,41 +374,116 @@
   @media (max-width: 1100px) { .telemetry-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 650px) { .telemetry-grid { grid-template-columns: 1fr; } }
 
+  /* POLISHED CHANNEL CARD STYLES */
   .channel-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--card-radius);
-    padding: 14px;
+    padding: 14px 16px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     backdrop-filter: blur(10px);
-    transition: transform 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .channel-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
-  .channel-card.alarm-hihi, .channel-card.alarm-lolo { border-color: var(--accent-alarm); box-shadow: 0 0 20px rgba(239, 68, 68, 0.25); animation: alarm-glow 1.5s infinite alternate; }
-  @keyframes alarm-glow { 0% { background: rgba(239, 68, 68, 0.08); } 100% { background: rgba(239, 68, 68, 0.2); } }
+  .channel-card.alarm-hihi, .channel-card.alarm-lolo {
+    border-color: rgba(239, 68, 68, 0.6);
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.25);
+  }
 
-  .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
-  .ch-badge { background: rgba(255, 255, 255, 0.08); color: var(--text-muted); font-weight: 700; font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; }
-  :root.light-mode .ch-badge { background: rgba(0, 0, 0, 0.06); }
-  .ch-label { font-family: var(--font-heading); font-size: 1rem; font-weight: 700; color: var(--text-main); margin-top: 4px; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  
+  .ch-badge {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--accent-cyan);
+    font-weight: 800;
+    font-size: 0.78rem;
+    padding: 3px 9px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    display: inline-block;
+  }
+  :root.light-mode .ch-badge { background: rgba(6, 182, 212, 0.12); }
 
-  .alarm-status-pill { padding: 4px 10px; border-radius: 12px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
-  .status-normal { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
-  .status-warning { background: rgba(245, 158, 11, 0.15); color: var(--accent-warning); border: 1px solid rgba(245, 158, 11, 0.3); }
-  .status-alarm { background: rgba(239, 68, 68, 0.2); color: var(--accent-alarm); border: 1px solid rgba(239, 68, 68, 0.5); }
-  .status-offline { background: rgba(100, 116, 139, 0.2); color: var(--text-dim); border: 1px solid rgba(100, 116, 139, 0.3); }
+  /* LARGER PROMINENT CHANNEL NAMES */
+  .ch-label {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-top: 5px;
+    line-height: 1.2;
+  }
 
-  .temp-display { display: flex; align-items: baseline; gap: 6px; margin: 10px 0; }
-  .temp-val { font-family: var(--font-heading); font-size: 2.8rem; font-weight: 800; letter-spacing: -1px; color: var(--text-main); line-height: 1; }
-  .temp-unit { font-size: 1.1rem; color: var(--text-dim); font-weight: 600; }
+  /* POLISHED ALARM BADGES */
+  .alarm-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+  }
 
-  .threshold-bar-track { height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden; }
+  .status-dot-indicator {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .status-normal {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.25));
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+  }
+  .status-normal .status-dot-indicator { background: #10b981; box-shadow: 0 0 6px #10b981; }
+
+  .status-warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.3));
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.45);
+  }
+  .status-warning .status-dot-indicator { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+
+  .status-alarm {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(225, 29, 72, 0.38));
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.55);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
+  }
+  .status-alarm .status-dot-indicator { background: #ef4444; box-shadow: 0 0 8px #ef4444; animation: pulse-dot 1.5s infinite; }
+
+  .status-offline {
+    background: rgba(100, 116, 139, 0.18);
+    color: var(--text-dim);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+  }
+  .status-offline .status-dot-indicator { background: var(--text-dim); }
+
+  /* LARGER HIGH-CONTRAST CHANNEL VALUES */
+  .temp-display { display: flex; align-items: baseline; gap: 8px; margin: 8px 0; }
+  .temp-val {
+    font-family: var(--font-heading);
+    font-size: 3.5rem;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    color: var(--text-main);
+    line-height: 1;
+  }
+  .temp-unit { font-size: 1.3rem; color: var(--text-dim); font-weight: 600; }
+
+  .threshold-bar-track { height: 7px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden; }
   :root.light-mode .threshold-bar-track { background: rgba(0, 0, 0, 0.08); }
-  .threshold-bar-fill { height: 100%; border-radius: 3px; width: 0%; transition: width 0.5s ease; background: var(--accent-blue); }
-  .card-meta { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-top: 6px; }
+  .threshold-bar-fill { height: 100%; border-radius: 4px; width: 0%; transition: width 0.5s ease; background: var(--accent-blue); }
+  .card-meta { display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--text-dim); margin-top: 6px; font-weight: 500; }
 
   .drawer-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(8px); z-index: 500; }
   .drawer-overlay.active { display: block; }
@@ -1134,9 +1209,9 @@
         statusClass = 'status-offline';
         statusText = 'OFFLINE';
       } else if (valNum >= s.hihi) {
-        statusClass = 'status-alarm'; statusText = 'CRITICAL HIHI'; cardAlarmClass = 'alarm-hihi';
+        statusClass = 'status-alarm'; statusText = 'HIHI ALARM'; cardAlarmClass = 'alarm-hihi';
       } else if (valNum <= s.lolo) {
-        statusClass = 'status-alarm'; statusText = 'CRITICAL LOLO'; cardAlarmClass = 'alarm-lolo';
+        statusClass = 'status-alarm'; statusText = 'LOLO ALARM'; cardAlarmClass = 'alarm-lolo';
       } else if (valNum >= s.hi) {
         statusClass = 'status-warning'; statusText = 'WARNING HI';
       } else if (valNum <= s.lo) {
@@ -1144,20 +1219,26 @@
       }
 
       const pct = isOffline ? 0 : Math.max(0, Math.min(100, ((valNum - s.lolo) / (s.hihi - s.lolo)) * 100));
+      const barColor = isOffline ? 'var(--text-dim)' : (valNum >= s.hihi || valNum <= s.lolo ? 'var(--accent-alarm)' : (valNum >= s.hi || valNum <= s.lo ? 'var(--accent-warning)' : 'var(--accent-blue)'));
 
       const card = document.createElement('div');
       card.className = `channel-card ${cardAlarmClass}`;
       card.innerHTML = `
         <div class="card-top">
-          <div><span class="ch-badge">${s.id}</span><div class="ch-label">${s.label}</div></div>
-          <span class="alarm-status-pill ${statusClass}">${statusText}</span>
+          <div>
+            <span class="ch-badge">${s.id}</span>
+            <div class="ch-label">${s.label}</div>
+          </div>
+          <span class="alarm-status-pill ${statusClass}">
+            <span class="status-dot-indicator"></span>${statusText}
+          </span>
         </div>
         <div class="temp-display">
           <span class="temp-val">${valStr}</span>
           <span class="temp-unit">${s.unit}</span>
         </div>
         <div>
-          <div class="threshold-bar-track"><div class="threshold-bar-fill" style="width: ${pct}%;"></div></div>
+          <div class="threshold-bar-track"><div class="threshold-bar-fill" style="width: ${pct}%; background: ${barColor};"></div></div>
           <div class="card-meta"><span>Lo: ${s.lo}° | Hi: ${s.hi}°</span><span>HiHi: ${s.hihi}°C</span></div>
         </div>
       `;
@@ -1306,7 +1387,7 @@
     tbody.innerHTML = '';
     historyData.slice(0, 150).forEach(item => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="padding:10px;">${new Date(item.time).toLocaleString()}</td><td style="padding:10px;">${item.channel}</td><td style="padding:10px;">${item.value.toFixed(1)} °C</td><td style="padding:10px;"><span class="alarm-status-pill status-normal">NORMAL</span></td>`;
+      tr.innerHTML = `<td style="padding:10px;">${new Date(item.time).toLocaleString()}</td><td style="padding:10px;">${item.channel}</td><td style="padding:10px;">${item.value.toFixed(1)} °C</td><td style="padding:10px;"><span class="alarm-status-pill status-normal"><span class="status-dot-indicator"></span>NORMAL</span></td>`;
       tbody.appendChild(tr);
     });
   }
