@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=HeatWatch 3 Kiosk
+Comment=Autostart Chromium in fullscreen kiosk mode for HeatWatch 3
+Exec=/bin/bash -c "sleep 5 && chromium --noerrdialogs --disable-infobars --kiosk --app=http://localhost:3001"
+X-GNOME-Autostart-enabled=true

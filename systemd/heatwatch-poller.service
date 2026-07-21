@@ -1,0 +1,13 @@
+[Unit]
+Description=HeatWatch 3 Temperature Data Poller
+After=network.target influxdb.service
+
+[Service]
+User=heatwatch
+WorkingDirectory=/home/heatwatch/Milma_Kattappana
+ExecStart=/home/heatwatch/Milma_Kattappana/venv/bin/python3 poller.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,7 +1,7 @@
 {
-  "name": "milma-dashboard",
-  "version": "1.0.0",
-  "description": "Milma Kattappana Temperature Monitor Dashboard",
+  "name": "heatwatch-dashboard",
+  "version": "3.0.0",
+  "description": "HeatWatch 3 Industrial Telemetry Dashboard by Goose Industrial Solutions",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
