@@ -7,8 +7,8 @@ NODE_PATH=$(which node || echo "/usr/bin/node")
 
 echo "[HeatWatch 3] Configuring Systemd Service for directory: $CURR_DIR (User: $CURR_USER)"
 
-# 1. Dynamically Create & Start Dashboard Service with current folder path
-sudo cat > /etc/systemd/system/heatwatch-dashboard.service << EOF
+# 1. Dynamically Create & Start Dashboard Service using tee
+cat << EOF | sudo tee /etc/systemd/system/heatwatch-dashboard.service > /dev/null
 [Unit]
 Description=HeatWatch 3 Dashboard Server
 After=network.target
