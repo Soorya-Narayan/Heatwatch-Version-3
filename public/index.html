@@ -634,7 +634,14 @@
           <button class="btn" onclick="saveAdminSettings()">Save All Changes</button>
         </div>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; overflow-y: auto; margin-top: 12px;" id="protected-settings-grid"></div>
-        <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <strong style="color: var(--accent-warning);">Reset Setup & Re-run Setup Wizard</strong>
+            <p style="font-size: 0.78rem; color: var(--text-dim);">Clear admin credentials and re-run initial setup wizard from the beginning.</p>
+          </div>
+          <button class="btn" style="background: var(--accent-warning); color: #000;" onclick="resetSetupPrompt()">Re-run Setup Wizard</button>
+        </div>
+        <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div>
             <strong style="color: var(--accent-alarm);">Danger Zone: Historical Data Clearance</strong>
             <p style="font-size: 0.78rem; color: var(--text-dim);">Permanently remove all temperature readings stored in InfluxDB.</p>
@@ -1193,6 +1200,14 @@
       doc.text('HeatWatch 3 — Telemetry Report', 14, 15);
       doc.autoTable({ head: [['Timestamp', 'Channel', 'Value (°C)']], body: historyData.slice(0, 100).map(r => [new Date(r.time).toLocaleString(), r.channel, r.value.toFixed(1)]) });
       doc.save('HeatWatch_Report.pdf');
+    }
+  }
+
+  async function resetSetupPrompt() {
+    if (!confirm('Are you sure you want to reset admin credentials and re-run the setup wizard from the beginning?')) return;
+    const res = await fetch('/api/reset-setup', { method: 'POST' });
+    if (res.ok) {
+      location.reload();
     }
   }
 

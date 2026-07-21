@@ -84,7 +84,6 @@ function parsePpiResponse(text) {
   const readings = {};
   if (!text) return readings;
 
-  // 1. Try XML format <CH1>28.2</CH1>
   for (let i = 1; i <= 8; i++) {
     const chKey = `CH${i}`;
     const xmlMatch = text.match(new RegExp(`<${chKey}>\\s*(-?\\d+(?:\\.\\d+)?)\\s*</${chKey}>`, 'i'));
@@ -94,7 +93,6 @@ function parsePpiResponse(text) {
   }
   if (Object.keys(readings).length === 8) return readings;
 
-  // 2. Try HTML table / text matching (CH1 followed by numbers)
   for (let i = 1; i <= 8; i++) {
     const chKey = `CH${i}`;
     const regex = new RegExp(`${chKey}[^0-9\\-]*?(-?\\d+(?:\\.\\d+)?)`, 'i');
@@ -173,7 +171,19 @@ app.post('/api/setup', (req, res) => {
   };
 
   saveSetupState(SYSTEM_STATE);
-  console.log(`[HeatWatch 3] Initial setup completed for user: ${username}`);
+  console.log(`[HeatWatch 3] Setup completed for user: ${username}`);
+  res.json({ ok: true });
+});
+
+app.post('/api/reset-setup', (req, res) => {
+  try {
+    if (fs.existsSync(SETUP_FILE)) {
+      fs.unlinkSync(SETUP_FILE);
+    }
+  } catch (e) {}
+
+  SYSTEM_STATE = { isConfigured: false, user: null, sensors: DEFAULT_SENSORS };
+  console.log('[HeatWatch 3] Setup state reset to unconfigured.');
   res.json({ ok: true });
 });
 
@@ -334,7 +344,6 @@ async function broadcastTelemetry() {
   const currentSensors = SYSTEM_STATE.sensors || DEFAULT_SENSORS;
   let latestReadings = {};
 
-  // Method 1: Query InfluxDB
   try {
     const q = `from(bucket: "${INFLUX_BUCKET}")
       |> range(start: -30s)
@@ -350,7 +359,6 @@ async function broadcastTelemetry() {
     }
   } catch (e) {}
 
-  // Method 2: Direct HTTP fetch from PPI hardware (192.168.1.2) if InfluxDB empty
   if (Object.keys(latestReadings).length === 0) {
     const directReadings = await fetchPpiHardwareDirect();
     if (directReadings) {
