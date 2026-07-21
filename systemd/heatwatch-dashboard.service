@@ -4,7 +4,7 @@ After=network.target influxdb.service
 
 [Service]
 User=heatwatch
-WorkingDirectory=/home/heatwatch/Milma_Kattappana
+WorkingDirectory=/home/heatwatch/HeatWatch3
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=5

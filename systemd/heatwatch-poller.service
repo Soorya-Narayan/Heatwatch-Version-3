@@ -4,8 +4,8 @@ After=network.target influxdb.service
 
 [Service]
 User=heatwatch
-WorkingDirectory=/home/heatwatch/Milma_Kattappana
-ExecStart=/home/heatwatch/Milma_Kattappana/venv/bin/python3 poller.py
+WorkingDirectory=/home/heatwatch/HeatWatch3
+ExecStart=/home/heatwatch/HeatWatch3/venv/bin/python3 poller.py
 Restart=always
 RestartSec=5
 

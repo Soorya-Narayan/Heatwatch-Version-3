@@ -7,11 +7,10 @@ and writes time-series records to InfluxDB v2.
 
 import time
 import sys
-import math
 import random
 import xml.etree.ElementTree as ET
 import requests
-from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 
 INFLUX_URL    = "http://localhost:8086"
@@ -19,25 +18,22 @@ INFLUX_TOKEN  = "9upI6oc3KDqHU64Gfq_2JJ9zjC4hZId-4w6qbenxgIEpvJU0TdIDp3dzgjEV5g8
 INFLUX_ORG    = "heatwatch"
 INFLUX_BUCKET = "temperature_data"
 AIME_URL      = "http://192.168.1.2/index.xml"
-POLL_INTERVAL = 3  # seconds
+POLL_INTERVAL = 3
 
-# Initialize InfluxDB Client
 client = None
 write_api = None
 
 try:
     client = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
     write_api = client.write_api(write_options=SYNCHRONOUS)
-    print(f"[HeatWatch 3 Poller] Connected to InfluxDB at {INFLUX_URL} (Org: {INFLUX_ORG}, Bucket: {INFLUX_BUCKET})")
+    print(f"[HeatWatch 3 Poller] Connected to InfluxDB at {INFLUX_URL}")
 except Exception as e:
-    print(f"[HeatWatch 3 Poller] InfluxDB init warning: {e}")
+    print(f"[HeatWatch 3 Poller] InfluxDB warning: {e}")
 
-# Base simulated values for 8 channels
 simulated_temps = [82.5, 76.0, 14.2, 4.5, 3.8, 4.1, 48.0, 28.5]
 
 def poll_aime_hardware():
-    """Poll PPI AIME 8U XML interface over HTTP"""
-    resp = requests.get(AIME_URL, timeout=2.5)
+    resp = requests.get(AIME_URL, timeout=2.0)
     resp.raise_for_status()
     tree = ET.fromstring(resp.content)
     
@@ -47,14 +43,12 @@ def poll_aime_hardware():
         elem = tree.find(ch_key)
         if elem is not None and elem.text:
             try:
-                val = float(elem.text.strip())
-                channels[ch_key] = val
+                channels[ch_key] = float(elem.text.strip())
             except ValueError:
                 pass
     return channels
 
-def generate_simulation_telemetry():
-    """Generate realistic fluctuating industrial temperatures"""
+def generate_simulation():
     channels = {}
     for i in range(8):
         ch_key = f"CH{i+1}"
@@ -63,12 +57,11 @@ def generate_simulation_telemetry():
         channels[ch_key] = round(simulated_temps[i], 1)
     return channels
 
-def write_to_influx(channel_data):
-    """Write 8 channel points to InfluxDB"""
+def write_to_influx(data):
     if not write_api:
         return
     points = []
-    for ch_id, val in channel_data.items():
+    for ch_id, val in data.items():
         point = (
             Point("temperature")
             .tag("channel", ch_id)
@@ -79,35 +72,30 @@ def write_to_influx(channel_data):
         points.append(point)
     try:
         write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=points)
-    except Exception as e:
-        # Fallback retry with fallback org name if needed
-        try:
-            write_api.write(bucket=INFLUX_BUCKET, org="milma_kattappana", record=points)
-        except Exception:
-            pass
+    except Exception:
+        pass
 
 def main():
-    print("[HeatWatch 3 Poller] Starting telemetry collection loop...")
-    simulation_mode = False
+    print("[HeatWatch 3 Poller] Starting telemetry loop...")
+    sim_mode = False
 
     while True:
         try:
-            if not simulation_mode:
+            if not sim_mode:
                 try:
                     data = poll_aime_hardware()
                     print(f"[AIME 8U Hardware] {data}")
-                except Exception as hw_err:
-                    print(f"[Poller Notice] Hardware offline ({AIME_URL}). Switching to simulation mode.")
-                    simulation_mode = True
-                    data = generate_simulation_telemetry()
+                except Exception:
+                    print(f"[Poller] Hardware unreachable ({AIME_URL}). Running simulation mode.")
+                    sim_mode = True
+                    data = generate_simulation()
             else:
-                data = generate_simulation_telemetry()
+                data = generate_simulation()
                 print(f"[Simulated Telemetry] {data}")
 
             write_to_influx(data)
 
         except KeyboardInterrupt:
-            print("\n[HeatWatch 3 Poller] Stopped by user.")
             sys.exit(0)
         except Exception as err:
             print(f"[Poller Error] {err}")

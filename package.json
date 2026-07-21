@@ -1,7 +1,7 @@
 {
   "name": "heatwatch-dashboard",
   "version": "3.0.0",
-  "description": "HeatWatch 3 Industrial Telemetry Dashboard by Goose Industrial Solutions",
+  "description": "HeatWatch 3 Industrial Telemetry Platform by Goose Industrial Solutions",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

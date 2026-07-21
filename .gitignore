@@ -1,7 +1,0 @@
-node_modules/
-channel_config.json
-*.log
-venv/
-__pycache__/
-*.pyc
-.DS_Store

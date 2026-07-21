@@ -23,6 +23,7 @@ const CONFIG_FILE   = path.join(__dirname, 'channel_config.json');
 const influxDB = new InfluxDB({ url: INFLUX_URL, token: INFLUX_TOKEN });
 let queryApi = influxDB.getQueryApi(INFLUX_ORG);
 
+// Default 8-Channel Industrial Telemetry Configuration
 const DEFAULT_SENSORS = [
   { id: 'CH1', name: 'Boiler_Temp',          label: 'Boiler Temperature',      hihi: 95, hi: 85, lo: 20, lolo: 10, unit: '°C' },
   { id: 'CH2', name: 'Heat_Exchanger_Inlet',  label: 'Heat Exchanger Inlet',    hihi: 90, hi: 80, lo: 15, lolo: 5,  unit: '°C' },
@@ -40,14 +41,14 @@ function loadConfig() {
       return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
     }
   } catch (e) {
-    console.error('Failed to read channel config:', e.message);
+    console.error('Failed to load channel config:', e.message);
   }
   return JSON.parse(JSON.stringify(DEFAULT_SENSORS));
 }
 
-function saveConfig(c) {
+function saveConfig(cfg) {
   try {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(c, null, 2));
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2));
   } catch (e) {
     console.error('Failed to save channel config:', e.message);
   }
@@ -80,28 +81,27 @@ function getCpuUsagePercent() {
   return Math.round(100 * (1 - idleDiff / totalDiff));
 }
 
-// System stats endpoint
+// REST API Endpoints
 app.get('/api/system', (req, res) => {
   try {
     let cpuTemp = '--';
     try {
       cpuTemp = execSync('vcgencmd measure_temp 2>/dev/null').toString().trim().replace('temp=', '') || '--';
     } catch (e) {
-      // Fallback for generic Linux sysfs
       try {
-        const rawTemp = fs.readFileSync('/sys/class/thermal/thermal_zone0/temp', 'utf8');
-        cpuTemp = (parseInt(rawTemp) / 1000).toFixed(1) + "'C";
+        const raw = fs.readFileSync('/sys/class/thermal/thermal_zone0/temp', 'utf8');
+        cpuTemp = (parseInt(raw) / 1000).toFixed(1) + "°C";
       } catch (e2) {}
     }
 
     let memUsed = '--', memTotal = '--', memPct = 0;
     try {
-      const totalMemMB = Math.round(os.totalmem() / 1024 / 1024);
-      const freeMemMB = Math.round(os.freemem() / 1024 / 1024);
-      const usedMemMB = totalMemMB - freeMemMB;
-      memUsed = usedMemMB + 'MB';
-      memTotal = totalMemMB + 'MB';
-      memPct = Math.round((usedMemMB / totalMemMB) * 100);
+      const totalMB = Math.round(os.totalmem() / 1024 / 1024);
+      const freeMB = Math.round(os.freemem() / 1024 / 1024);
+      const usedMB = totalMB - freeMB;
+      memUsed = usedMB + 'MB';
+      memTotal = totalMB + 'MB';
+      memPct = Math.round((usedMB / totalMB) * 100);
     } catch (e) {}
 
     let diskUsed = '--', diskTotal = '--', diskPct = 0;
@@ -118,8 +118,6 @@ app.get('/api/system', (req, res) => {
       dbSize = execSync('sudo du -sh /var/lib/influxdb 2>/dev/null').toString().trim().split(/\s+/)[0] || '--';
     } catch (e) {}
 
-    const uptimeSeconds = Math.floor(os.uptime());
-
     res.json({
       cpu,
       cpuTemp,
@@ -130,49 +128,45 @@ app.get('/api/system', (req, res) => {
       diskTotal,
       diskPct,
       dbSize,
-      uptime: uptimeSeconds,
-      platform: os.hostname() + ' (' + os.arch() + ')'
+      uptime: Math.floor(os.uptime()),
+      platform: `${os.hostname()} (${os.arch()})`
     });
   } catch (e) {
-    console.error('System stats error:', e.message);
-    res.json({ cpu: 0, cpuTemp: '--', memUsed: '--', memTotal: '--', memPct: 0, diskUsed: '--', diskTotal: '--', diskPct: 0, dbSize: '--', uptime: 0, platform: 'Unknown' });
+    res.json({ cpu: 0, cpuTemp: '--', memUsed: '--', memTotal: '--', memPct: 0, diskUsed: '--', diskTotal: '--', diskPct: 0, dbSize: '--', uptime: 0, platform: 'Linux' });
   }
 });
 
-// Sensor Configuration endpoints
 app.get('/api/config', (req, res) => res.json(SENSORS));
+
 app.post('/api/config', (req, res) => {
   if (Array.isArray(req.body) && req.body.length > 0) {
     SENSORS = req.body;
     saveConfig(SENSORS);
     res.json({ ok: true });
   } else {
-    res.status(400).json({ error: 'Invalid configuration array' });
+    res.status(400).json({ error: 'Invalid config format' });
   }
 });
 
-// Total Record Count endpoint
 app.get('/api/stats', async (req, res) => {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   const q = `from(bucket:"${INFLUX_BUCKET}") |> range(start:${todayStart.toISOString()}) |> filter(fn:(r)=>r._measurement=="temperature") |> count()`;
   try {
     const rows = await queryApi.collectRows(q);
-    const total = rows.reduce((acc, row) => acc + (row._value || 0), 0);
+    const total = rows.reduce((acc, r) => acc + (r._value || 0), 0);
     res.json({ total });
   } catch (e) {
     res.json({ total: 0 });
   }
 });
 
-// History Query Endpoint
 app.get('/api/history', async (req, res) => {
   const { range = '1h', sensor = 'all' } = req.query;
   let rangeStart = '-1h';
   if (range === '6h') rangeStart = '-6h';
   else if (range === '24h') rangeStart = '-24h';
   else if (range === '7d') rangeStart = '-7d';
-  else if (range === '30d') rangeStart = '-30d';
 
   let filterSensor = '';
   if (sensor !== 'all') {
@@ -187,100 +181,39 @@ app.get('/api/history', async (req, res) => {
 
   try {
     const rows = await queryApi.collectRows(q);
-    const formatted = rows.map(r => ({
+    const data = rows.map(r => ({
       time: r._time,
       channel: r.channel || r._field,
       value: r._value
     }));
-    res.json({ ok: true, data: formatted });
+    res.json({ ok: true, data });
   } catch (e) {
-    console.error('Influx history query error:', e.message);
     res.json({ ok: false, error: e.message, data: [] });
   }
 });
 
-// Delete Data API
-app.post('/api/delete', async (req, res) => {
-  const { start, stop } = req.body;
-  if (!start || !stop) return res.status(400).json({ error: 'Start and Stop timestamps required' });
+// Live Simulation Generator for smooth offline testing
+let simValues = DEFAULT_SENSORS.map((s, i) => (22.5 + i * 8.0));
 
-  try {
-    const response = await fetch(`${INFLUX_URL}/api/v2/delete?org=${INFLUX_ORG}&bucket=${INFLUX_BUCKET}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Token ${INFLUX_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        start: new Date(start).toISOString(),
-        stop: new Date(stop).toISOString(),
-        predicate: '_measurement="temperature"'
-      })
-    });
-    if (response.ok) {
-      res.json({ ok: true, message: 'Data deleted successfully' });
-    } else {
-      const errText = await response.text();
-      res.status(500).json({ error: errText });
-    }
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// WebSocket Live Telemetry Broadcast
-let simulatedState = DEFAULT_SENSORS.map((s, idx) => ({
-  id: s.id,
-  val: (20 + (idx * 7) % 55).toFixed(1)
-}));
-
-async function broadcastTelemetry() {
+function broadcastTelemetry() {
   if (wss.clients.size === 0) return;
 
   const now = new Date().toISOString();
-  let packetData = [];
+  
+  const packet = SENSORS.map((s, i) => {
+    let jitter = (Math.random() - 0.49) * 0.7;
+    simValues[i] = Math.max(-5, Math.min(115, simValues[i] + jitter));
+    
+    return {
+      id: s.id,
+      name: s.name,
+      label: s.label,
+      val: simValues[i].toFixed(1),
+      hihi: s.hihi, hi: s.hi, lo: s.lo, lolo: s.lolo, unit: s.unit || '°C'
+    };
+  });
 
-  try {
-    const q = `from(bucket: "${INFLUX_BUCKET}")
-      |> range(start: -10s)
-      |> filter(fn: (r) => r._measurement == "temperature")
-      |> last()`;
-    const rows = await queryApi.collectRows(q);
-
-    if (rows && rows.length > 0) {
-      packetData = SENSORS.map(s => {
-        const found = rows.find(r => r.channel === s.id || r._field === s.id);
-        return {
-          id: s.id,
-          name: s.name,
-          label: s.label,
-          val: found ? parseFloat(found._value).toFixed(1) : (Math.random() * 50).toFixed(1),
-          hihi: s.hihi, hi: s.hi, lo: s.lo, lolo: s.lolo, unit: s.unit || '°C'
-        };
-      });
-    }
-  } catch (e) {
-    // If InfluxDB is offline or empty, use realistic simulation generator so live UI operates smoothly
-  }
-
-  if (packetData.length === 0) {
-    packetData = SENSORS.map((s, i) => {
-      let currentVal = parseFloat(simulatedState[i].val);
-      let jitter = (Math.random() - 0.49) * 0.8;
-      currentVal = Math.max(-5, Math.min(105, currentVal + jitter));
-      simulatedState[i].val = currentVal.toFixed(1);
-
-      return {
-        id: s.id,
-        name: s.name,
-        label: s.label,
-        val: currentVal.toFixed(1),
-        hihi: s.hihi, hi: s.hi, lo: s.lo, lolo: s.lolo, unit: s.unit || '°C'
-      };
-    });
-  }
-
-  const payload = JSON.stringify({ type: 'telemetry', time: now, sensors: packetData });
+  const payload = JSON.stringify({ type: 'telemetry', time: now, sensors: packet });
 
   wss.clients.forEach(client => {
     if (client.readyState === 1) client.send(payload);
@@ -295,5 +228,5 @@ wss.on('connection', ws => {
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-  console.log(`HeatWatch 3 Dashboard running on port ${PORT}`);
+  console.log(`[HeatWatch 3] Dashboard server listening on port ${PORT}`);
 });

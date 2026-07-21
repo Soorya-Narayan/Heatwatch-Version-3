@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HeatWatch 3 — Industrial Telemetry Dashboard</title>
+<title>HeatWatch 3 — Industrial Telemetry Platform</title>
 
-<!-- Modern Typography & Libraries -->
+<!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
   :root {
     --bg-primary: #07090e;
     --bg-surface: #0e131f;
-    --bg-card: rgba(18, 26, 43, 0.7);
+    --bg-card: rgba(18, 26, 43, 0.75);
     --border-color: rgba(255, 255, 255, 0.08);
     --border-glow: rgba(59, 130, 246, 0.3);
     
@@ -66,7 +66,6 @@
     background-attachment: fixed;
   }
 
-  /* Main Container */
   .app-container {
     display: flex;
     flex-direction: column;
@@ -77,7 +76,6 @@
     gap: 12px;
   }
 
-  /* Header Navbar */
   header.navbar {
     display: flex;
     align-items: center;
@@ -211,7 +209,6 @@
     color: var(--accent-blue);
   }
 
-  /* Content Views Area */
   .content-area {
     flex: 1;
     overflow-y: auto;
@@ -230,7 +227,6 @@
     display: flex;
   }
 
-  /* Telemetry 8-Channel Grid */
   .telemetry-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -369,7 +365,6 @@
     font-weight: 500;
   }
 
-  /* Trends View */
   .chart-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -415,7 +410,6 @@
     position: relative;
   }
 
-  /* Tables & Inputs */
   .data-table-container {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -446,10 +440,6 @@
     outline: none;
   }
 
-  select:focus, input:focus {
-    border-color: var(--accent-blue);
-  }
-
   table {
     width: 100%;
     border-collapse: collapse;
@@ -464,17 +454,12 @@
     font-weight: 600;
     font-size: 0.78rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
 
   td {
     padding: 12px 18px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-main);
-  }
-
-  tr:hover td {
-    background: rgba(255, 255, 255, 0.02);
   }
 
   .btn {
@@ -486,17 +471,10 @@
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: opacity 0.2s ease;
   }
 
-  .btn:hover { opacity: 0.9; }
   .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
-  .btn-outline:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
 
-  /* Settings Grid */
   .settings-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -534,7 +512,6 @@
     text-transform: uppercase;
   }
 
-  /* System Stats Cards */
   .sys-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -562,7 +539,6 @@
 <body>
 
 <div class="app-container">
-  <!-- Top Navigation Bar -->
   <header class="navbar">
     <div class="brand-group">
       <img src="goose_logo.png" alt="Goose Industrial" class="brand-logo" onerror="this.style.display='none'">
@@ -590,21 +566,20 @@
     </div>
   </header>
 
-  <!-- Content Views -->
   <main class="content-area">
     
     <!-- 1. LIVE TELEMETRY TAB -->
     <section id="tab-live" class="tab-content active">
       <div class="telemetry-grid" id="sensor-cards-grid">
-        <!-- Rendered via JS -->
+        <!-- JS Rendered Cards -->
       </div>
     </section>
 
-    <!-- 2. TRENDS ANALYTICS TAB -->
+    <!-- 2. TRENDS TAB -->
     <section id="tab-trends" class="tab-content">
       <div class="chart-card">
         <div class="chart-header">
-          <h3>Multi-Channel Realtime & Historical Trends</h3>
+          <h3>Realtime & Historical Telemetry Trends</h3>
           <div class="timeframe-selector">
             <button class="tf-btn active" onclick="loadTrends('1h', this)">1 Hour</button>
             <button class="tf-btn" onclick="loadTrends('6h', this)">6 Hours</button>
@@ -618,7 +593,7 @@
       </div>
     </section>
 
-    <!-- 3. HISTORY QUERY TAB -->
+    <!-- 3. HISTORY TAB -->
     <section id="tab-history" class="tab-content">
       <div class="data-table-container">
         <div class="table-controls">
@@ -656,7 +631,7 @@
               <tr>
                 <th>Timestamp</th>
                 <th>Channel ID</th>
-                <th>Temperature Reading</th>
+                <th>Temperature</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -668,18 +643,18 @@
       </div>
     </section>
 
-    <!-- 4. THRESHOLD SETTINGS TAB -->
+    <!-- 4. SETTINGS TAB -->
     <section id="tab-settings" class="tab-content">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <h3>Channel Labeling & Alarm Threshold Configurations</h3>
+        <h3>Channel Labeling & Threshold Settings</h3>
         <button class="btn" onclick="saveSettings()">Save All Changes</button>
       </div>
       <div class="settings-grid" id="settings-form-grid">
-        <!-- Rendered via JS -->
+        <!-- JS Rendered -->
       </div>
     </section>
 
-    <!-- 5. SYSTEM DIAGNOSTICS TAB -->
+    <!-- 5. SYSTEM TAB -->
     <section id="tab-system" class="tab-content">
       <div class="sys-grid">
         <div class="sys-card">
@@ -701,11 +676,11 @@
       </div>
 
       <div class="chart-card" style="margin-top: 14px;">
-        <h3>Hardware Platform & Environment</h3>
+        <h3>Hardware Environment</h3>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px;">
-          <div><strong>Host Architecture:</strong> <span id="sys-platform">--</span></div>
-          <div><strong>System Uptime:</strong> <span id="sys-uptime">--</span></div>
-          <div><strong>Database Record Size:</strong> <span id="sys-dbsize">--</span></div>
+          <div><strong>Host System:</strong> <span id="sys-platform">--</span></div>
+          <div><strong>Uptime:</strong> <span id="sys-uptime">--</span></div>
+          <div><strong>Database Size:</strong> <span id="sys-dbsize">--</span></div>
           <div><strong>WebSocket Feed:</strong> <span style="color: var(--accent-green);">Active (Port 3001)</span></div>
         </div>
       </div>
@@ -720,7 +695,6 @@
   let ws = null;
   let historyData = [];
 
-  // Tab Switching
   function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -736,7 +710,6 @@
     }
   }
 
-  // Connect WebSocket
   function initWebSocket() {
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     ws = new WebSocket(`${protocol}//${location.host}`);
@@ -758,12 +731,10 @@
 
     ws.onclose = () => {
       document.getElementById('conn-text').innerText = 'RECONNECTING...';
-      document.getElementById('conn-pill').style.borderColor = 'rgba(239, 68, 68, 0.5)';
       setTimeout(initWebSocket, 3000);
     };
   }
 
-  // Render Live Telemetry Grid
   function renderLiveTelemetry(sensors) {
     const grid = document.getElementById('sensor-cards-grid');
     grid.innerHTML = '';
@@ -814,7 +785,6 @@
     });
   }
 
-  // Trends Chart Initialization
   function initChart() {
     const ctx = document.getElementById('trendsChart').getContext('2d');
     trendsChart = new Chart(ctx, {
@@ -823,7 +793,6 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 400 },
         scales: {
           x: { grid: { color: 'rgba(255,255,255,0.05)' } },
           y: { grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'Temperature (°C)' } }
@@ -840,7 +809,6 @@
 
     const res = await fetch(`/api/history?range=${range}`);
     const result = await res.json();
-
     if (!result.ok || !trendsChart) return;
 
     const channelData = {};
@@ -863,7 +831,6 @@
     trendsChart.update();
   }
 
-  // History Fetch
   async function fetchHistory() {
     const sensor = document.getElementById('hist-sensor').value;
     const range = document.getElementById('hist-range').value;
@@ -876,7 +843,7 @@
     tbody.innerHTML = '';
 
     if (historyData.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">No records found for selected range</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">No records found</td></tr>`;
       return;
     }
 
@@ -892,7 +859,6 @@
     });
   }
 
-  // Export Data
   function exportData(type) {
     if (historyData.length === 0) return alert('Please query data first!');
 
@@ -905,11 +871,11 @@
       const ws = XLSX.utils.json_to_sheet(historyData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'History');
-      XLSX.writeFile(wb, 'HeatWatch_Telemetry_Report.xlsx');
+      XLSX.writeFile(wb, 'HeatWatch_Report.xlsx');
     } else if (type === 'pdf') {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      doc.text('HeatWatch 3 — Industrial Telemetry Report', 14, 15);
+      doc.text('HeatWatch 3 — Telemetry Report', 14, 15);
       doc.autoTable({
         head: [['Timestamp', 'Channel', 'Value (°C)']],
         body: historyData.slice(0, 100).map(r => [new Date(r.time).toLocaleString(), r.channel, r.value.toFixed(1)])
@@ -918,7 +884,6 @@
     }
   }
 
-  // Render Settings Form
   function renderSettingsForm() {
     const grid = document.getElementById('settings-form-grid');
     grid.innerHTML = '';
@@ -962,7 +927,6 @@
     if (res.ok) alert('Settings saved successfully!');
   }
 
-  // Fetch System Diagnostics
   async function fetchSystemStats() {
     const res = await fetch('/api/system');
     const data = await res.json();
@@ -976,7 +940,6 @@
     document.getElementById('sys-dbsize').innerText = data.dbSize || '--';
   }
 
-  // Utilities
   function toggleTheme() {
     document.documentElement.classList.toggle('light-mode');
   }
