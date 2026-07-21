@@ -4,10 +4,11 @@
 CURR_DIR="$PWD"
 CURR_USER="$USER"
 NODE_PATH=$(which node || echo "/usr/bin/node")
+PYTHON_PATH=$(which python3 || echo "/usr/bin/python3")
 
-echo "[HeatWatch 3] Configuring Systemd Service for directory: $CURR_DIR (User: $CURR_USER)"
+echo "[HeatWatch 3] Configuring Systemd Services for directory: $CURR_DIR (User: $CURR_USER)"
 
-# 1. Dynamically Create & Start Dashboard Service using tee
+# 1. Create Dashboard Server Service
 cat << EOF | sudo tee /etc/systemd/system/heatwatch-dashboard.service > /dev/null
 [Unit]
 Description=HeatWatch 3 Dashboard Server
@@ -24,11 +25,28 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-# 2. Reload Systemd and Start Server Immediately
-sudo systemctl daemon-reload
-sudo systemctl enable --now heatwatch-dashboard
+# 2. Create Python Data Poller Service
+cat << EOF | sudo tee /etc/systemd/system/heatwatch-poller.service > /dev/null
+[Unit]
+Description=HeatWatch 3 Temperature Data Poller
+After=network.target
 
-# 3. Configure Desktop Kiosk Autostart
+[Service]
+User=$CURR_USER
+WorkingDirectory=$CURR_DIR
+ExecStart=$PYTHON_PATH poller.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 3. Reload Systemd and Start Both Services Immediately
+sudo systemctl daemon-reload
+sudo systemctl enable --now heatwatch-dashboard heatwatch-poller
+
+# 4. Configure Desktop Kiosk Autostart
 AUTOSTART_DIR="$HOME/.config/autostart"
 DESKTOP_FILE="$AUTOSTART_DIR/heatwatch-kiosk.desktop"
 
@@ -44,4 +62,4 @@ EOF
 
 chmod +x "$DESKTOP_FILE"
 
-echo "[HeatWatch 3] Server service started & Kiosk autostart configured successfully!"
+echo "[HeatWatch 3] Services started & Kiosk autostart configured successfully!"

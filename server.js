@@ -79,6 +79,35 @@ function getCpuUsagePercent() {
   return Math.round(100 * (1 - idleDiff / totalDiff));
 }
 
+// Direct HTTP Polling from PPI AIME 8U Hardware at 192.168.1.2
+async function fetchPpiHardwareDirect() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1500);
+    const res = await fetch('http://192.168.1.2/', { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const html = await res.text();
+    
+    const readings = {};
+    for (let i = 1; i <= 8; i++) {
+      const chKey = `CH${i}`;
+      const regex = new RegExp(`${chKey}\\s*</t[dh]>\\s*<td[^>]*>\\s*(-?\\d+(?:\\.\\d+)?)`, 'i');
+      const match = html.match(regex);
+      if (match) {
+        readings[chKey] = parseFloat(match[1]);
+      } else {
+        const regexAlt = new RegExp(`${chKey}.*?(-?\\d+\\.\\d+|-?\\d+)`, 'is');
+        const matchAlt = html.match(regexAlt);
+        if (matchAlt) readings[chKey] = parseFloat(matchAlt[1]);
+      }
+    }
+    return Object.keys(readings).length > 0 ? readings : null;
+  } catch(e) {
+    return null;
+  }
+}
+
 // -------------------------------------------------------------
 // API Endpoints
 // -------------------------------------------------------------
@@ -261,7 +290,7 @@ app.post('/api/delete', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// Live Telemetry Broadcaster (ONLY Real Data from InfluxDB / PPI)
+// Fail-Safe Live Telemetry Broadcaster
 // -------------------------------------------------------------
 async function broadcastTelemetry() {
   if (wss.clients.size === 0) return;
@@ -270,6 +299,7 @@ async function broadcastTelemetry() {
   const currentSensors = SYSTEM_STATE.sensors || DEFAULT_SENSORS;
   let latestReadings = {};
 
+  // Try 1: Query InfluxDB
   try {
     const q = `from(bucket: "${INFLUX_BUCKET}")
       |> range(start: -30s)
@@ -283,8 +313,14 @@ async function broadcastTelemetry() {
         if (ch) latestReadings[ch] = r._value;
       });
     }
-  } catch (e) {
-    // InfluxDB or query error
+  } catch (e) {}
+
+  // Try 2: Direct HTTP fetch from PPI AIME 8U if InfluxDB has no recent rows
+  if (Object.keys(latestReadings).length === 0) {
+    const directReadings = await fetchPpiHardwareDirect();
+    if (directReadings) {
+      latestReadings = directReadings;
+    }
   }
 
   const packet = currentSensors.map(s => {
