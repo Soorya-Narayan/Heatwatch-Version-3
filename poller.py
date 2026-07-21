@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
 HeatWatch 3 — Live Industrial Temperature Poller
-Polls PPI AIME 8U RTD hardware via HTTP XML (http://192.168.1.2/index.xml)
+Polls PPI AIME 8U RTD hardware via HTTP (index.xml or main HTML interface at http://192.168.1.2/)
 and writes live time-series readings to InfluxDB v2.
 """
 
 import time
 import sys
+import re
 import xml.etree.ElementTree as ET
 import requests
 from influxdb_client import InfluxDBClient, Point
@@ -16,7 +17,7 @@ INFLUX_URL    = "http://localhost:8086"
 INFLUX_TOKEN  = "9upI6oc3KDqHU64Gfq_2JJ9zjC4hZId-4w6qbenxgIEpvJU0TdIDp3dzgjEV5g8idgwC3dO2X58j8Vo5b33BnQ=="
 INFLUX_ORG    = "heatwatch"
 INFLUX_BUCKET = "temperature_data"
-AIME_URL      = "http://192.168.1.2/index.xml"
+AIME_URL      = "http://192.168.1.2"
 POLL_INTERVAL = 2  # seconds
 
 client = None
@@ -30,20 +31,57 @@ except Exception as e:
     print(f"[HeatWatch 3 Poller] InfluxDB init notice: {e}")
 
 def poll_aime_hardware():
-    """Poll PPI AIME 8U XML hardware interface"""
-    resp = requests.get(AIME_URL, timeout=2.0)
-    resp.raise_for_status()
-    tree = ET.fromstring(resp.content)
-    
+    """Poll PPI AIME 8U via XML endpoint or HTML scraping fallback"""
     channels = {}
-    for i in range(1, 9):
-        ch_key = f"CH{i}"
-        elem = tree.find(ch_key)
-        if elem is not None and elem.text:
-            try:
-                channels[ch_key] = float(elem.text.strip())
-            except ValueError:
-                pass
+
+    # Method 1: Try XML endpoint (index.xml)
+    try:
+        resp = requests.get(f"{AIME_URL}/index.xml", timeout=2.0)
+        if resp.status_code == 200:
+            tree = ET.fromstring(resp.content)
+            for i in range(1, 9):
+                ch_key = f"CH{i}"
+                elem = tree.find(ch_key)
+                if elem is not None and elem.text:
+                    try:
+                        channels[ch_key] = float(elem.text.strip())
+                    except ValueError:
+                        pass
+            if len(channels) == 8:
+                return channels
+    except Exception:
+        pass
+
+    # Method 2: HTML Page Parsing (Scrape http://192.168.1.2/)
+    try:
+        resp = requests.get(f"{AIME_URL}/", timeout=2.5)
+        if resp.status_code == 200:
+            html = resp.text
+            # Regex to match CH1..CH8 and Process Value from HTML table
+            for i in range(1, 9):
+                ch_key = f"CH{i}"
+                # Pattern: CH1 followed by td tag with numeric process value
+                pattern = rf'{ch_key}\s*</t[dh]>\s*<td[^>]*>\s*(-?\d+(?:\.\d+)?)'
+                match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+                if match:
+                    try:
+                        channels[ch_key] = float(match.group(1))
+                    except ValueError:
+                        pass
+                else:
+                    # Fallback pattern for inline or plain text layout
+                    pattern_alt = rf'{ch_key}.*?(-?\d+\.\d+)'
+                    match_alt = re.search(pattern_alt, html, re.IGNORECASE | re.DOTALL)
+                    if match_alt:
+                        try:
+                            channels[ch_key] = float(match_alt.group(1))
+                        except ValueError:
+                            pass
+            if channels:
+                return channels
+    except Exception:
+        pass
+
     return channels
 
 def write_to_influx(data):
@@ -66,7 +104,7 @@ def write_to_influx(data):
         print(f"[Poller Write Error] {e}")
 
 def main():
-    print(f"[HeatWatch 3 Poller] Starting LIVE PPI AIME 8U polling loop ({AIME_URL})...")
+    print(f"[HeatWatch 3 Poller] Polling live PPI AIME 8U hardware ({AIME_URL})...")
 
     while True:
         try:
@@ -75,9 +113,9 @@ def main():
                 print(f"[PPI AIME 8U Live Readings] {data}")
                 write_to_influx(data)
             else:
-                print(f"[Poller Warning] XML received from {AIME_URL} but no channel tags found.")
-        except requests.exceptions.RequestException as req_err:
-            print(f"[Poller Status] Waiting for PPI AIME 8U hardware connection at {AIME_URL}...")
+                print(f"[Poller Status] Connected to {AIME_URL}, waiting for channel data...")
+        except requests.exceptions.RequestException:
+            print(f"[Poller Status] Waiting for PPI AIME 8U hardware at {AIME_URL}...")
         except KeyboardInterrupt:
             print("\n[HeatWatch 3 Poller] Stopped.")
             sys.exit(0)
