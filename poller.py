@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-HeatWatch 3 — Industrial Temperature Poller
+HeatWatch 3 — Industrial Telemetry Data Poller
 Polls PPI AIME 8U RTD hardware via HTTP XML or generates simulation telemetry
 and writes time-series records to InfluxDB v2.
 """
@@ -28,7 +28,7 @@ try:
     write_api = client.write_api(write_options=SYNCHRONOUS)
     print(f"[HeatWatch 3 Poller] Connected to InfluxDB at {INFLUX_URL}")
 except Exception as e:
-    print(f"[HeatWatch 3 Poller] InfluxDB warning: {e}")
+    print(f"[HeatWatch 3 Poller] InfluxDB init warning: {e}")
 
 simulated_temps = [82.5, 76.0, 14.2, 4.5, 3.8, 4.1, 48.0, 28.5]
 
@@ -76,7 +76,7 @@ def write_to_influx(data):
         pass
 
 def main():
-    print("[HeatWatch 3 Poller] Starting telemetry loop...")
+    print("[HeatWatch 3 Poller] Starting telemetry collection loop...")
     sim_mode = False
 
     while True:
@@ -86,7 +86,7 @@ def main():
                     data = poll_aime_hardware()
                     print(f"[AIME 8U Hardware] {data}")
                 except Exception:
-                    print(f"[Poller] Hardware unreachable ({AIME_URL}). Running simulation mode.")
+                    print(f"[Poller Notice] Hardware unreachable ({AIME_URL}). Running simulation mode.")
                     sim_mode = True
                     data = generate_simulation()
             else:

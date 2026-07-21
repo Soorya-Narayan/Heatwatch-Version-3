@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HeatWatch 3 — Industrial Telemetry Platform</title>
 
-<!-- Google Fonts -->
+<!-- Fonts & External Libraries -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -21,7 +21,7 @@
     --bg-surface: #0e131f;
     --bg-card: rgba(18, 26, 43, 0.75);
     --border-color: rgba(255, 255, 255, 0.08);
-    --border-glow: rgba(59, 130, 246, 0.3);
+    --border-glow: rgba(59, 130, 246, 0.35);
     
     --text-main: #f1f5f9;
     --text-muted: #94a3b8;
@@ -34,7 +34,7 @@
     --accent-alarm: #ef4444;
     
     --card-radius: 14px;
-    --shadow-main: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    --shadow-main: 0 12px 35px -10px rgba(0, 0, 0, 0.6);
     --font-heading: 'Outfit', sans-serif;
     --font-body: 'Inter', sans-serif;
   }
@@ -45,11 +45,9 @@
     --bg-card: rgba(255, 255, 255, 0.9);
     --border-color: rgba(0, 0, 0, 0.08);
     --border-glow: rgba(59, 130, 246, 0.2);
-    
     --text-main: #0f172a;
     --text-muted: #475569;
     --text-dim: #94a3b8;
-    
     --shadow-main: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
   }
 
@@ -59,14 +57,189 @@
     background-color: var(--bg-primary);
     color: var(--text-main);
     min-height: 100vh;
-    overflow-x: hidden;
+    overflow: hidden;
     background-image: 
       radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
       radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.06) 0%, transparent 40%);
     background-attachment: fixed;
   }
 
-  .app-container {
+  /* --------------------------------------------------------- */
+  /* APPLE-INSPIRED FIRST BOOT SETUP WIZARD STYLES             */
+  /* --------------------------------------------------------- */
+  #wizard-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100vw;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 1000;
+    background: var(--bg-primary);
+    backdrop-filter: blur(20px);
+    transition: opacity 0.5s ease;
+  }
+
+  .wizard-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: var(--shadow-main);
+    width: 90%;
+    max-width: 680px;
+    padding: 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes fade-in-up {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .apple-logo-glow {
+    width: 96px;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.6));
+    animation: pulse-glow 3s infinite ease-in-out;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 35px rgba(6, 182, 212, 0.8)); transform: scale(1.03); }
+  }
+
+  .wizard-title {
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--text-main) 30%, var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .wizard-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    max-width: 480px;
+    line-height: 1.5;
+  }
+
+  .wizard-progress {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .wizard-dot {
+    width: 32px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    transition: background 0.3s ease;
+  }
+
+  .wizard-dot.active { background: var(--accent-blue); box-shadow: 0 0 8px var(--accent-blue); }
+
+  .form-grid {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    text-align: left;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  input, select {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent-blue);
+  }
+
+  .sensor-setup-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    max-height: 340px;
+    overflow-y: auto;
+    width: 100%;
+    padding-right: 4px;
+  }
+
+  .sensor-setup-item {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+  }
+
+  .thresh-inputs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .thresh-inputs input {
+    padding: 6px 8px;
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  .btn {
+    background: var(--accent-blue);
+    color: #ffffff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+  }
+
+  .btn:hover { opacity: 0.95; transform: translateY(-1px); }
+  .btn-secondary { background: rgba(255, 255, 255, 0.08); color: var(--text-main); box-shadow: none; }
+  .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+
+  /* --------------------------------------------------------- */
+  /* MAIN DASHBOARD STYLES                                     */
+  /* --------------------------------------------------------- */
+  #main-app {
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -88,75 +261,30 @@
     box-shadow: var(--shadow-main);
   }
 
-  .brand-group {
+  .nav-left {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
   }
 
-  .brand-logo {
-    height: 38px;
+  .nav-logo {
+    height: 36px;
     width: auto;
     object-fit: contain;
     filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
   }
 
-  .brand-titles h1 {
+  .nav-center h1 {
     font-family: var(--font-heading);
-    font-size: 1.35rem;
+    font-size: 1.4rem;
     font-weight: 800;
     letter-spacing: -0.5px;
     background: linear-gradient(135deg, var(--text-main) 30%, var(--accent-cyan));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    line-height: 1.1;
   }
 
-  .brand-titles p {
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  .nav-tabs {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 4px;
-    border-radius: 10px;
-    border: 1px solid var(--border-color);
-  }
-
-  .tab-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    padding: 8px 14px;
-    border-radius: 7px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .tab-btn:hover {
-    color: var(--text-main);
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  .tab-btn.active {
-    background: var(--accent-blue);
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
-  }
-
-  .header-actions {
+  .nav-right {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -176,57 +304,52 @@
   }
 
   .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+    width: 8px; height: 8px; border-radius: 50%;
     background: var(--accent-green);
     box-shadow: 0 0 8px var(--accent-green);
     animation: pulse-dot 2s infinite;
   }
 
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.85); }
-  }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-  .icon-btn {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+  .settings-menu-btn {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid var(--border-glow);
+    color: var(--accent-blue);
+    padding: 8px 16px;
+    border-radius: 9px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
-    cursor: pointer;
+    gap: 8px;
     transition: all 0.2s ease;
-    font-size: 1rem;
   }
 
-  .icon-btn:hover {
-    border-color: var(--accent-blue);
-    color: var(--accent-blue);
+  .settings-menu-btn:hover {
+    background: var(--accent-blue);
+    color: #fff;
   }
 
-  .content-area {
+  /* Main View Container */
+  .view-container {
     flex: 1;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
   }
 
-  .tab-content {
+  .view-panel {
     display: none;
     height: 100%;
     flex-direction: column;
     gap: 14px;
   }
 
-  .tab-content.active {
-    display: flex;
-  }
+  .view-panel.active { display: flex; }
 
+  /* Telemetry Grid (8 Channels) */
   .telemetry-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -235,12 +358,8 @@
     flex: 1;
   }
 
-  @media (max-width: 1100px) {
-    .telemetry-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-  @media (max-width: 650px) {
-    .telemetry-grid { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 1100px) { .telemetry-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 650px) { .telemetry-grid { grid-template-columns: 1fr; } }
 
   .channel-card {
     background: var(--bg-card);
@@ -250,16 +369,11 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    position: relative;
-    overflow: hidden;
     backdrop-filter: blur(10px);
     transition: transform 0.2s ease, border-color 0.2s ease;
   }
 
-  .channel-card:hover {
-    border-color: var(--border-glow);
-    transform: translateY(-2px);
-  }
+  .channel-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
 
   .channel-card.alarm-hihi, .channel-card.alarm-lolo {
     border-color: var(--accent-alarm);
@@ -267,102 +381,106 @@
     animation: alarm-glow 1.5s infinite alternate;
   }
 
-  @keyframes alarm-glow {
-    0% { background: rgba(239, 68, 68, 0.08); }
-    100% { background: rgba(239, 68, 68, 0.2); }
-  }
+  @keyframes alarm-glow { 0% { background: rgba(239, 68, 68, 0.08); } 100% { background: rgba(239, 68, 68, 0.2); } }
 
-  .card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .ch-badge { background: rgba(255, 255, 255, 0.08); color: var(--text-muted); font-weight: 700; font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; }
+  .ch-label { font-family: var(--font-heading); font-size: 1rem; font-weight: 700; color: var(--text-main); margin-top: 4px; }
 
-  .ch-badge {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--text-muted);
-    font-weight: 700;
-    font-size: 0.7rem;
-    padding: 3px 8px;
-    border-radius: 6px;
-    letter-spacing: 0.5px;
-  }
-
-  .ch-label {
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-main);
-    margin-top: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 180px;
-  }
-
-  .alarm-status-pill {
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
+  .alarm-status-pill { padding: 4px 10px; border-radius: 12px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
   .status-normal { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
   .status-warning { background: rgba(245, 158, 11, 0.15); color: var(--accent-warning); border: 1px solid rgba(245, 158, 11, 0.3); }
   .status-alarm { background: rgba(239, 68, 68, 0.2); color: var(--accent-alarm); border: 1px solid rgba(239, 68, 68, 0.5); }
 
-  .temp-display {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    margin: 10px 0;
+  .temp-display { display: flex; align-items: baseline; gap: 6px; margin: 10px 0; }
+  .temp-val { font-family: var(--font-heading); font-size: 2.8rem; font-weight: 800; letter-spacing: -1px; color: var(--text-main); line-height: 1; }
+  .temp-unit { font-size: 1.1rem; color: var(--text-dim); font-weight: 600; }
+
+  .threshold-bar-track { height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden; }
+  .threshold-bar-fill { height: 100%; border-radius: 3px; width: 0%; transition: width 0.5s ease; background: var(--accent-blue); }
+  .card-meta { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-top: 6px; }
+
+  /* Drawer / Modal Navigation Menu */
+  .drawer-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    z-index: 500;
   }
 
-  .temp-val {
-    font-family: var(--font-heading);
-    font-size: 2.8rem;
-    font-weight: 800;
-    letter-spacing: -1px;
-    color: var(--text-main);
-    line-height: 1;
-  }
+  .drawer-overlay.active { display: block; }
 
-  .temp-unit {
-    font-size: 1.1rem;
-    color: var(--text-dim);
-    font-weight: 600;
-  }
-
-  .card-footer {
+  .nav-drawer {
+    position: fixed;
+    top: 0; right: -360px;
+    width: 320px;
+    height: 100vh;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border-color);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    z-index: 600;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    padding: 24px 20px;
+    gap: 16px;
+    transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .threshold-bar-track {
-    height: 6px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 3px;
-    overflow: hidden;
-    position: relative;
-  }
+  .nav-drawer.active { right: 0; }
 
-  .threshold-bar-fill {
-    height: 100%;
-    border-radius: 3px;
-    width: 0%;
-    transition: width 0.5s ease, background-color 0.3s ease;
-    background: var(--accent-blue);
-  }
+  .drawer-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; }
+  .drawer-header h3 { font-family: var(--font-heading); font-size: 1.2rem; }
+  .close-drawer-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; }
 
-  .card-meta {
+  .drawer-menu { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+
+  .menu-item {
     display: flex;
-    justify-content: space-between;
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    font-weight: 500;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+  }
+
+  .menu-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-main); }
+  .menu-item.active { background: var(--accent-blue); color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+
+  /* Modal Dialog for Password Protection */
+  .modal-box {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    z-index: 1200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-box.active { display: flex; }
+
+  .modal-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 28px;
+    width: 90%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: var(--shadow-main);
+    text-align: center;
   }
 
   .chart-card {
@@ -375,313 +493,239 @@
     flex-direction: column;
     gap: 12px;
   }
-
-  .chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .timeframe-selector {
-    display: flex;
-    gap: 6px;
-  }
-
-  .tf-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    padding: 5px 12px;
-    border-radius: 6px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .tf-btn.active {
-    background: var(--accent-blue);
-    color: #fff;
-    border-color: var(--accent-blue);
-  }
-
-  .chart-wrapper {
-    flex: 1;
-    min-height: 350px;
-    position: relative;
-  }
-
-  .data-table-container {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--card-radius);
-    overflow: hidden;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .table-controls {
-    padding: 14px 18px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border-color);
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  select, input {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-    padding: 8px 12px;
-    border-radius: 7px;
-    font-size: 0.85rem;
-    outline: none;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-
-  th {
-    background: rgba(0, 0, 0, 0.3);
-    color: var(--text-muted);
-    text-align: left;
-    padding: 12px 18px;
-    font-weight: 600;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-  }
-
-  td {
-    padding: 12px 18px;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-main);
-  }
-
-  .btn {
-    background: var(--accent-blue);
-    color: #fff;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 7px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-  }
-
-  .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
-
-  .settings-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-    flex: 1;
-    overflow-y: auto;
-  }
-
-  .settings-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--card-radius);
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    gap: 8px;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .form-group label {
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .sys-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-  }
-
-  .sys-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--card-radius);
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .sys-val {
-    font-family: var(--font-heading);
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--accent-cyan);
-  }
 </style>
 </head>
 <body>
 
-<div class="app-container">
-  <header class="navbar">
-    <div class="brand-group">
-      <img src="goose_logo.png" alt="Goose Industrial" class="brand-logo" onerror="this.style.display='none'">
-      <div class="brand-titles">
-        <h1>HEATWATCH 3</h1>
-        <p>Industrial Telemetry Platform</p>
+<!-- ========================================================= -->
+<!-- 1. APPLE-INSPIRED FIRST BOOT SETUP WIZARD                 -->
+<!-- ========================================================= -->
+<div id="wizard-container">
+  <div class="wizard-card">
+    <img src="goose_logo.png" alt="Goose Logo" class="apple-logo-glow" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%233b82f6\' stroke-width=\'2\'><circle cx=\'12\' cy=\'12\' r=\'10\'/></svg>'">
+    
+    <div class="wizard-progress">
+      <div class="wizard-dot active" id="dot-1"></div>
+      <div class="wizard-dot" id="dot-2"></div>
+      <div class="wizard-dot" id="dot-3"></div>
+      <div class="wizard-dot" id="dot-4"></div>
+    </div>
+
+    <!-- Step 1: Welcome & Ambient Start -->
+    <div id="wizard-step-1" style="display: flex; flex-direction: column; align-items: center; gap: 14px;">
+      <h2 class="wizard-title">Welcome to HeatWatch</h2>
+      <p class="wizard-subtitle">Next-generation industrial telemetry platform by Goose Industrial Solutions. Let's configure your system credentials and RTD sensors.</p>
+      <button class="btn" style="margin-top: 10px;" onclick="goToWizardStep(2)">Get Started →</button>
+    </div>
+
+    <!-- Step 2: User Credentials & Access Setup -->
+    <div id="wizard-step-2" style="display: none; width: 100%; flex-direction: column; gap: 14px;">
+      <h2 class="wizard-title">Setup Administrator Profile</h2>
+      <p class="wizard-subtitle">Create your admin account and set a security password to protect settings.</p>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="wz-username" placeholder="e.g., admin">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Role</label>
+            <select id="wz-role">
+              <option value="Administrator">Administrator</option>
+              <option value="Supervisor">Supervisor</option>
+              <option value="Plant Operator">Plant Operator</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Access Type</label>
+            <select id="wz-access">
+              <option value="Full Access">Full Access (Admin)</option>
+              <option value="Read Only">Read Only</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Set Password</label>
+            <input type="password" id="wz-password" placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" id="wz-password-confirm" placeholder="••••••••">
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; margin-top: 10px;">
+        <button class="btn btn-secondary" onclick="goToWizardStep(1)">Back</button>
+        <button class="btn" onclick="validateStep2()">Next: RTD Sensors →</button>
       </div>
     </div>
 
-    <nav class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('live')">📊 Live Monitor</button>
-      <button class="tab-btn" onclick="switchTab('trends')">📈 Trends</button>
-      <button class="tab-btn" onclick="switchTab('history')">📜 History</button>
-      <button class="tab-btn" onclick="switchTab('settings')">⚙️ Settings</button>
-      <button class="tab-btn" onclick="switchTab('system')">💻 System</button>
-    </nav>
+    <!-- Step 3: 8 RTD Sensors Threshold Setup -->
+    <div id="wizard-step-3" style="display: none; width: 100%; flex-direction: column; gap: 14px;">
+      <h2 class="wizard-title">Configure 8 RTD Sensors</h2>
+      <p class="wizard-subtitle">Set names and threshold limits (HiHi, Hi, Lo, LoLo) for your PPI AIME 8U sensors.</p>
 
-    <div class="header-actions">
-      <div class="status-pill" id="conn-pill">
-        <div class="status-dot"></div>
-        <span id="conn-text">LIVE CONNECTED</span>
+      <div class="sensor-setup-grid" id="wizard-sensor-items">
+        <!-- Rendered via JS -->
       </div>
-      <button class="icon-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
-      <button class="icon-btn" onclick="toggleFullscreen()" title="Fullscreen Kiosk">⛶</button>
+
+      <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; margin-top: 10px;">
+        <button class="btn btn-secondary" onclick="goToWizardStep(2)">Back</button>
+        <button class="btn" onclick="goToWizardStep(4)">Next: Review →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Summary & Confirmation -->
+    <div id="wizard-step-4" style="display: none; width: 100%; flex-direction: column; gap: 14px;">
+      <h2 class="wizard-title">Review & Complete Setup</h2>
+      <p class="wizard-subtitle">Verify your configuration details before launching the HeatWatch telemetry system.</p>
+
+      <div class="form-grid" style="background: rgba(0,0,0,0.25); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+        <div><strong>Administrator:</strong> <span id="sum-user">--</span> (<span id="sum-role">--</span>)</div>
+        <div><strong>Access Level:</strong> <span id="sum-access">--</span></div>
+        <div><strong>RTD Sensors Configured:</strong> 8 Channels (PPI AIME 8U)</div>
+      </div>
+
+      <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; margin-top: 10px;">
+        <button class="btn btn-secondary" onclick="goToWizardStep(3)">Back</button>
+        <button class="btn" onclick="completeWizardSetup()">Finish Setup & Launch Dashboard ✓</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ========================================================= -->
+<!-- 2. MAIN HEATWATCH TELEMETRY DASHBOARD                     -->
+<!-- ========================================================= -->
+<div id="main-app" style="display: none;">
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="nav-left">
+      <img src="goose_logo.png" alt="Goose Logo" class="nav-logo" onerror="this.style.display='none'">
+    </div>
+
+    <div class="nav-center">
+      <h1>HeatWatch</h1>
+    </div>
+
+    <div class="nav-right">
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        <span>LIVE TELEMETRY</span>
+      </div>
+      <button class="settings-menu-btn" onclick="toggleDrawer(true)">⚙️ Settings & Navigation</button>
     </div>
   </header>
 
-  <main class="content-area">
+  <!-- Main Views Container -->
+  <main class="view-container">
     
-    <!-- 1. LIVE TELEMETRY TAB -->
-    <section id="tab-live" class="tab-content active">
-      <div class="telemetry-grid" id="sensor-cards-grid">
-        <!-- JS Rendered Cards -->
+    <!-- 1. LIVE MONITOR (HOMESCREEN) -->
+    <section id="view-live" class="view-panel active">
+      <div class="telemetry-grid" id="main-sensor-grid">
+        <!-- Rendered via JS -->
       </div>
     </section>
 
-    <!-- 2. TRENDS TAB -->
-    <section id="tab-trends" class="tab-content">
+    <!-- 2. TRENDS -->
+    <section id="view-trends" class="view-panel">
       <div class="chart-card">
-        <div class="chart-header">
-          <h3>Realtime & Historical Telemetry Trends</h3>
-          <div class="timeframe-selector">
-            <button class="tf-btn active" onclick="loadTrends('1h', this)">1 Hour</button>
-            <button class="tf-btn" onclick="loadTrends('6h', this)">6 Hours</button>
-            <button class="tf-btn" onclick="loadTrends('24h', this)">24 Hours</button>
-            <button class="tf-btn" onclick="loadTrends('7d', this)">7 Days</button>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Multi-Channel Realtime Trends</h3>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="loadTrends('1h')">1 Hour</button>
+            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="loadTrends('6h')">6 Hours</button>
+            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="loadTrends('24h')">24 Hours</button>
           </div>
         </div>
-        <div class="chart-wrapper">
-          <canvas id="trendsChart"></canvas>
+        <div style="flex: 1; min-height: 380px; position: relative;">
+          <canvas id="trendsChartCanvas"></canvas>
         </div>
       </div>
     </section>
 
-    <!-- 3. HISTORY TAB -->
-    <section id="tab-history" class="tab-content">
-      <div class="data-table-container">
-        <div class="table-controls">
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <select id="hist-sensor">
-              <option value="all">All Channels</option>
-              <option value="CH1">CH1 — Boiler Temperature</option>
-              <option value="CH2">CH2 — Heat Exchanger Inlet</option>
-              <option value="CH3">CH3 — Heat Exchanger Outlet</option>
-              <option value="CH4">CH4 — Chilled Water Supply</option>
-              <option value="CH5">CH5 — Primary Storage Tank</option>
-              <option value="CH6">CH6 — Secondary Storage Tank</option>
-              <option value="CH7">CH7 — Condenser Loop</option>
-              <option value="CH8">CH8 — Ambient Plant Room</option>
-            </select>
+    <!-- 3. HISTORY LOGS -->
+    <section id="view-history" class="view-panel">
+      <div class="chart-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; gap: 10px;">
+            <select id="hist-sensor"><option value="all">All Channels</option></select>
             <select id="hist-range">
               <option value="1h">Last 1 Hour</option>
               <option value="6h">Last 6 Hours</option>
               <option value="24h" selected>Last 24 Hours</option>
               <option value="7d">Last 7 Days</option>
             </select>
-            <button class="btn" onclick="fetchHistory()">Query Data</button>
+            <button class="btn" onclick="fetchHistory()">Query Logs</button>
           </div>
 
-          <div style="display: flex; gap: 8px;">
-            <button class="btn btn-outline" onclick="exportData('csv')">CSV</button>
-            <button class="btn btn-outline" onclick="exportData('excel')">Excel</button>
-            <button class="btn btn-outline" onclick="exportData('pdf')">PDF Report</button>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-secondary" onclick="exportData('csv')">CSV</button>
+            <button class="btn btn-secondary" onclick="exportData('excel')">Excel</button>
+            <button class="btn btn-secondary" onclick="exportData('pdf')">PDF</button>
           </div>
         </div>
 
-        <div style="overflow-y: auto; flex: 1;">
-          <table id="history-table">
+        <div style="overflow-y: auto; flex: 1; margin-top: 10px;">
+          <table style="width: 100%; border-collapse: collapse;">
             <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Channel ID</th>
-                <th>Temperature</th>
-                <th>Status</th>
+              <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.78rem; color: var(--text-dim);">
+                <th style="padding: 10px;">TIMESTAMP</th>
+                <th style="padding: 10px;">CHANNEL</th>
+                <th style="padding: 10px;">TEMPERATURE</th>
+                <th style="padding: 10px;">STATUS</th>
               </tr>
             </thead>
-            <tbody id="history-table-body">
-              <tr><td colspan="4" style="text-align: center; color: var(--text-dim);">Click 'Query Data' to fetch records</td></tr>
+            <tbody id="history-rows">
+              <tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-dim);">Click 'Query Logs' to view historical data</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- 4. SETTINGS TAB -->
-    <section id="tab-settings" class="tab-content">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <h3>Channel Labeling & Threshold Settings</h3>
-        <button class="btn" onclick="saveSettings()">Save All Changes</button>
+    <!-- 4. USAGE & PI HARDWARE STATS -->
+    <section id="view-usage" class="view-panel">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+        <div class="chart-card"><span style="font-size: 0.75rem; color: var(--text-dim);">CPU LOAD</span><div style="font-size: 2rem; font-weight: 800; color: var(--accent-cyan);" id="sys-cpu">0%</div></div>
+        <div class="chart-card"><span style="font-size: 0.75rem; color: var(--text-dim);">CPU TEMP</span><div style="font-size: 2rem; font-weight: 800; color: var(--accent-cyan);" id="sys-temp">--°C</div></div>
+        <div class="chart-card"><span style="font-size: 0.75rem; color: var(--text-dim);">RAM MEMORY</span><div style="font-size: 2rem; font-weight: 800; color: var(--accent-cyan);" id="sys-mem">0 / 0 MB</div></div>
+        <div class="chart-card"><span style="font-size: 0.75rem; color: var(--text-dim);">STORAGE DISK</span><div style="font-size: 2rem; font-weight: 800; color: var(--accent-cyan);" id="sys-disk">0%</div></div>
       </div>
-      <div class="settings-grid" id="settings-form-grid">
-        <!-- JS Rendered -->
+      <div class="chart-card" style="margin-top: 12px;">
+        <h3>System Diagnostics</h3>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px;">
+          <div><strong>Hardware System:</strong> <span id="sys-platform">--</span></div>
+          <div><strong>System Uptime:</strong> <span id="sys-uptime">--</span></div>
+          <div><strong>InfluxDB Data Size:</strong> <span id="sys-dbsize">--</span></div>
+          <div><strong>Hardware Interface:</strong> <span style="color: var(--accent-green);">PPI AIME 8U (HTTP XML)</span></div>
+        </div>
       </div>
     </section>
 
-    <!-- 5. SYSTEM TAB -->
-    <section id="tab-system" class="tab-content">
-      <div class="sys-grid">
-        <div class="sys-card">
-          <span style="font-size: 0.78rem; color: var(--text-dim);">CPU LOAD</span>
-          <div class="sys-val" id="sys-cpu">0%</div>
+    <!-- 5. SETTINGS (PASSWORD PROTECTED) -->
+    <section id="view-settings" class="view-panel">
+      <div class="chart-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Settings & Data Management (Admin Protected)</h3>
+          <button class="btn" onclick="saveAdminSettings()">Save All Changes</button>
         </div>
-        <div class="sys-card">
-          <span style="font-size: 0.78rem; color: var(--text-dim);">CPU TEMP</span>
-          <div class="sys-val" id="sys-temp">--°C</div>
-        </div>
-        <div class="sys-card">
-          <span style="font-size: 0.78rem; color: var(--text-dim);">MEMORY USAGE</span>
-          <div class="sys-val" id="sys-mem">0 / 0 MB</div>
-        </div>
-        <div class="sys-card">
-          <span style="font-size: 0.78rem; color: var(--text-dim);">STORAGE DISK</span>
-          <div class="sys-val" id="sys-disk">0%</div>
-        </div>
-      </div>
 
-      <div class="chart-card" style="margin-top: 14px;">
-        <h3>Hardware Environment</h3>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px;">
-          <div><strong>Host System:</strong> <span id="sys-platform">--</span></div>
-          <div><strong>Uptime:</strong> <span id="sys-uptime">--</span></div>
-          <div><strong>Database Size:</strong> <span id="sys-dbsize">--</span></div>
-          <div><strong>WebSocket Feed:</strong> <span style="color: var(--accent-green);">Active (Port 3001)</span></div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; overflow-y: auto; margin-top: 12px;" id="protected-settings-grid">
+          <!-- Rendered via JS -->
+        </div>
+
+        <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong style="color: var(--accent-alarm);">Danger Zone: Historical Data Clearance</strong>
+            <p style="font-size: 0.78rem; color: var(--text-dim);">Permanently remove all temperature readings stored in InfluxDB.</p>
+          </div>
+          <button class="btn" style="background: var(--accent-alarm);" onclick="deleteDataPrompt()">Delete Historical Data</button>
         </div>
       </div>
     </section>
@@ -689,71 +733,179 @@
   </main>
 </div>
 
+<!-- ========================================================= -->
+<!-- 3. DRAWER & PASSWORD MODAL                                -->
+<!-- ========================================================= -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer(false)"></div>
+<aside class="nav-drawer" id="nav-drawer">
+  <div class="drawer-header">
+    <h3>HeatWatch Menu</h3>
+    <button class="close-drawer-btn" onclick="toggleDrawer(false)">✕</button>
+  </div>
+
+  <nav class="drawer-menu">
+    <button class="menu-item active" onclick="selectView('live', this)">📊 Live Telemetry</button>
+    <button class="menu-item" onclick="selectView('trends', this)">📈 Trends</button>
+    <button class="menu-item" onclick="selectView('history', this)">📜 History Logs</button>
+    <button class="menu-item" onclick="selectView('usage', this)">💻 System & Usage</button>
+    <button class="menu-item" onclick="requestProtectedView('settings', this)">⚙️ Protected Settings 🔒</button>
+  </nav>
+
+  <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-color); font-size: 0.75rem; color: var(--text-dim);">
+    Logged in as: <strong id="drawer-user-display" style="color: var(--text-main);">Administrator</strong>
+  </div>
+</aside>
+
+<!-- Password Verification Modal -->
+<div class="modal-box" id="password-modal">
+  <div class="modal-card">
+    <h3 style="font-family: var(--font-heading); font-size: 1.3rem;">Authentication Required</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted);">Please enter your administrator password to access protected settings.</p>
+    <input type="password" id="modal-password-input" placeholder="Enter password" style="text-align: center;">
+    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 6px;">
+      <button class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
+      <button class="btn" onclick="submitPasswordVerification()">Authenticate</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  let sensorConfig = [];
+  let wizardSensors = [
+    { id: 'CH1', name: 'Boiler_Temp',          label: 'Boiler Temperature',      hihi: 95, hi: 85, lo: 20, lolo: 10, unit: '°C' },
+    { id: 'CH2', name: 'Heat_Exchanger_Inlet',  label: 'Heat Exchanger Inlet',    hihi: 90, hi: 80, lo: 15, lolo: 5,  unit: '°C' },
+    { id: 'CH3', name: 'Heat_Exchanger_Outlet', label: 'Heat Exchanger Outlet',   hihi: 85, hi: 75, lo: 10, lolo: 5,  unit: '°C' },
+    { id: 'CH4', name: 'Chilled_Water_Supply', label: 'Chilled Water Supply',   hihi: 15, hi: 12, lo: 2,  lolo: 0,  unit: '°C' },
+    { id: 'CH5', name: 'Primary_Storage_Tank', label: 'Primary Storage Tank',   hihi: 10, hi: 8,  lo: 2,  lolo: 0,  unit: '°C' },
+    { id: 'CH6', name: 'Secondary_Storage',    label: 'Secondary Storage Tank', hihi: 10, hi: 8,  lo: 2,  lolo: 0,  unit: '°C' },
+    { id: 'CH7', name: 'Condenser_Loop',       label: 'Condenser Loop',         hihi: 55, hi: 45, lo: 10, lolo: 5,  unit: '°C' },
+    { id: 'CH8', name: 'Ambient_Plant_Room',   label: 'Ambient Plant Room',     hihi: 45, hi: 38, lo: 10, lolo: 5,  unit: '°C' }
+  ];
+
+  let authenticatedPassword = null;
+  let targetProtectedView = null;
   let trendsChart = null;
-  let ws = null;
   let historyData = [];
 
-  function switchTab(tabId) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    
-    event.target.classList.add('active');
-    document.getElementById(`tab-${tabId}`).classList.add('active');
+  // Init Check
+  window.onload = async () => {
+    try {
+      const res = await fetch('/api/setup-status');
+      const data = await res.json();
+      
+      if (data.isConfigured) {
+        document.getElementById('wizard-container').style.display = 'none';
+        document.getElementById('main-app').style.display = 'flex';
+        if (data.user) document.getElementById('drawer-user-display').innerText = data.user.username;
+        if (data.sensors) wizardSensors = data.sensors;
+        initWebSocket();
+      } else {
+        renderWizardSensorItems();
+      }
+    } catch(e) {
+      renderWizardSensorItems();
+    }
+  };
 
-    if (tabId === 'trends' && !trendsChart) {
-      initChart();
-      loadTrends('1h');
-    } else if (tabId === 'system') {
-      fetchSystemStats();
+  // Wizard Step Switcher
+  function goToWizardStep(step) {
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById(`wizard-step-${i}`).style.display = i === step ? 'flex' : 'none';
+      const dot = document.getElementById(`dot-${i}`);
+      if (dot) dot.classList.toggle('active', i <= step);
     }
   }
 
+  function renderWizardSensorItems() {
+    const container = document.getElementById('wizard-sensor-items');
+    container.innerHTML = '';
+
+    wizardSensors.forEach((s, idx) => {
+      const div = document.createElement('div');
+      div.className = 'sensor-setup-item';
+      div.innerHTML = `
+        <div style="font-weight: 700; font-size: 0.8rem; color: var(--accent-cyan);">${s.id}</div>
+        <input type="text" id="wz-label-${idx}" value="${s.label}" placeholder="Channel Label">
+        <div class="thresh-inputs">
+          <input type="number" id="wz-lolo-${idx}" value="${s.lolo}" placeholder="LoLo">
+          <input type="number" id="wz-lo-${idx}" value="${s.lo}" placeholder="Lo">
+          <input type="number" id="wz-hi-${idx}" value="${s.hi}" placeholder="Hi">
+          <input type="number" id="wz-hihi-${idx}" value="${s.hihi}" placeholder="HiHi">
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function validateStep2() {
+    const user = document.getElementById('wz-username').value;
+    const pass = document.getElementById('wz-password').value;
+    const confirm = document.getElementById('wz-password-confirm').value;
+
+    if (!user || !pass) return alert('Please enter both username and password!');
+    if (pass !== confirm) return alert('Passwords do not match!');
+
+    goToWizardStep(3);
+  }
+
+  function collectWizardSensors() {
+    return wizardSensors.map((s, idx) => ({
+      ...s,
+      label: document.getElementById(`wz-label-${idx}`).value || s.label,
+      lolo: parseFloat(document.getElementById(`wz-lolo-${idx}`).value),
+      lo: parseFloat(document.getElementById(`wz-lo-${idx}`).value),
+      hi: parseFloat(document.getElementById(`wz-hi-${idx}`).value),
+      hihi: parseFloat(document.getElementById(`wz-hihi-${idx}`).value),
+    }));
+  }
+
+  async function completeWizardSetup() {
+    const username = document.getElementById('wz-username').value;
+    const role = document.getElementById('wz-role').value;
+    const accessLevel = document.getElementById('wz-access').value;
+    const password = document.getElementById('wz-password').value;
+    wizardSensors = collectWizardSensors();
+
+    const res = await fetch('/api/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, role, accessLevel, password, sensors: wizardSensors })
+    });
+
+    if (res.ok) {
+      document.getElementById('wizard-container').style.display = 'none';
+      document.getElementById('main-app').style.display = 'flex';
+      document.getElementById('drawer-user-display').innerText = username;
+      initWebSocket();
+    } else {
+      alert('Setup submission failed!');
+    }
+  }
+
+  // Dashboard Telemetry WebSocket
   function initWebSocket() {
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(`${protocol}//${location.host}`);
-
-    ws.onopen = () => {
-      document.getElementById('conn-text').innerText = 'LIVE CONNECTED';
-      document.getElementById('conn-pill').style.borderColor = 'rgba(16, 185, 129, 0.3)';
-    };
+    const ws = new WebSocket(`${protocol}//${location.host}`);
 
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
-      if (msg.type === 'config') {
-        sensorConfig = msg.sensors;
-        renderSettingsForm();
-      } else if (msg.type === 'telemetry') {
-        renderLiveTelemetry(msg.sensors);
+      if (msg.type === 'telemetry') {
+        renderMainTelemetryGrid(msg.sensors);
       }
-    };
-
-    ws.onclose = () => {
-      document.getElementById('conn-text').innerText = 'RECONNECTING...';
-      setTimeout(initWebSocket, 3000);
     };
   }
 
-  function renderLiveTelemetry(sensors) {
-    const grid = document.getElementById('sensor-cards-grid');
+  function renderMainTelemetryGrid(sensors) {
+    const grid = document.getElementById('main-sensor-grid');
     grid.innerHTML = '';
 
     sensors.forEach(s => {
       const val = parseFloat(s.val);
-      let statusClass = 'status-normal';
-      let statusText = 'NORMAL';
-      let cardAlarmClass = '';
+      let statusClass = 'status-normal', statusText = 'NORMAL', cardAlarmClass = '';
 
-      if (val >= s.hihi) {
-        statusClass = 'status-alarm'; statusText = 'CRITICAL HIHI'; cardAlarmClass = 'alarm-hihi';
-      } else if (val <= s.lolo) {
-        statusClass = 'status-alarm'; statusText = 'CRITICAL LOLO'; cardAlarmClass = 'alarm-lolo';
-      } else if (val >= s.hi) {
-        statusClass = 'status-warning'; statusText = 'WARNING HI';
-      } else if (val <= s.lo) {
-        statusClass = 'status-warning'; statusText = 'WARNING LO';
-      }
+      if (val >= s.hihi) { statusClass = 'status-alarm'; statusText = 'CRITICAL HIHI'; cardAlarmClass = 'alarm-hihi'; }
+      else if (val <= s.lolo) { statusClass = 'status-alarm'; statusText = 'CRITICAL LOLO'; cardAlarmClass = 'alarm-lolo'; }
+      else if (val >= s.hi) { statusClass = 'status-warning'; statusText = 'WARNING HI'; }
+      else if (val <= s.lo) { statusClass = 'status-warning'; statusText = 'WARNING LO'; }
 
       const pct = Math.max(0, Math.min(100, ((val - s.lolo) / (s.hihi - s.lolo)) * 100));
 
@@ -761,107 +913,170 @@
       card.className = `channel-card ${cardAlarmClass}`;
       card.innerHTML = `
         <div class="card-top">
-          <div>
-            <span class="ch-badge">${s.id}</span>
-            <div class="ch-label">${s.label}</div>
-          </div>
+          <div><span class="ch-badge">${s.id}</span><div class="ch-label">${s.label}</div></div>
           <span class="alarm-status-pill ${statusClass}">${statusText}</span>
         </div>
         <div class="temp-display">
           <span class="temp-val">${s.val}</span>
           <span class="temp-unit">${s.unit}</span>
         </div>
-        <div class="card-footer">
-          <div class="threshold-bar-track">
-            <div class="threshold-bar-fill" style="width: ${pct}%;"></div>
-          </div>
-          <div class="card-meta">
-            <span>Lo: ${s.lo}° | Hi: ${s.hi}°</span>
-            <span>HiHi: ${s.hihi}°C</span>
-          </div>
+        <div>
+          <div class="threshold-bar-track"><div class="threshold-bar-fill" style="width: ${pct}%;"></div></div>
+          <div class="card-meta"><span>Lo: ${s.lo}° | Hi: ${s.hi}°</span><span>HiHi: ${s.hihi}°C</span></div>
         </div>
       `;
       grid.appendChild(card);
     });
   }
 
-  function initChart() {
-    const ctx = document.getElementById('trendsChart').getContext('2d');
-    trendsChart = new Chart(ctx, {
-      type: 'line',
-      data: { labels: [], datasets: [] },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'Temperature (°C)' } }
-        }
-      }
+  // Navigation Drawer & Password Protection
+  function toggleDrawer(open) {
+    document.getElementById('nav-drawer').classList.toggle('active', open);
+    document.getElementById('drawer-overlay').classList.toggle('active', open);
+  }
+
+  function selectView(viewId, btn) {
+    document.querySelectorAll('.menu-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+
+    if (btn) btn.classList.add('active');
+    document.getElementById(`view-${viewId}`).classList.add('active');
+    toggleDrawer(false);
+
+    if (viewId === 'trends' && !trendsChart) { initChart(); loadTrends('1h'); }
+    else if (viewId === 'usage') { fetchUsageStats(); }
+  }
+
+  function requestProtectedView(viewId, btn) {
+    if (authenticatedPassword) {
+      renderProtectedSettingsForm();
+      selectView(viewId, btn);
+    } else {
+      targetProtectedView = { viewId, btn };
+      document.getElementById('password-modal').classList.add('active');
+    }
+  }
+
+  function closePasswordModal() {
+    document.getElementById('password-modal').classList.remove('active');
+  }
+
+  async function submitPasswordVerification() {
+    const pwd = document.getElementById('modal-password-input').value;
+    const res = await fetch('/api/verify-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pwd })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      authenticatedPassword = pwd;
+      closePasswordModal();
+      renderProtectedSettingsForm();
+      if (targetProtectedView) selectView(targetProtectedView.viewId, targetProtectedView.btn);
+    } else {
+      alert('Incorrect Password!');
+    }
+  }
+
+  function renderProtectedSettingsForm() {
+    const grid = document.getElementById('protected-settings-grid');
+    grid.innerHTML = '';
+
+    wizardSensors.forEach((s, idx) => {
+      const card = document.createElement('div');
+      card.style.cssText = 'background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; display: flex; flex-direction: column; gap: 8px;';
+      card.innerHTML = `
+        <strong>${s.id} Settings</strong>
+        <input type="text" id="adm-label-${idx}" value="${s.label}">
+        <div class="thresh-inputs">
+          <input type="number" id="adm-lolo-${idx}" value="${s.lolo}">
+          <input type="number" id="adm-lo-${idx}" value="${s.lo}">
+          <input type="number" id="adm-hi-${idx}" value="${s.hi}">
+          <input type="number" id="adm-hihi-${idx}" value="${s.hihi}">
+        </div>
+      `;
+      grid.appendChild(card);
     });
   }
 
-  async function loadTrends(range, btn) {
-    if (btn) {
-      document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    }
-
-    const res = await fetch(`/api/history?range=${range}`);
-    const result = await res.json();
-    if (!result.ok || !trendsChart) return;
-
-    const channelData = {};
-    result.data.forEach(r => {
-      if (!channelData[r.channel]) channelData[r.channel] = [];
-      channelData[r.channel].push({ x: new Date(r.time).toLocaleTimeString(), y: r.value });
-    });
-
-    const colors = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#f97316'];
-    const datasets = Object.keys(channelData).map((ch, idx) => ({
-      label: ch,
-      data: channelData[ch],
-      borderColor: colors[idx % colors.length],
-      borderWidth: 2,
-      tension: 0.3,
-      pointRadius: 0
+  async function saveAdminSettings() {
+    const updated = wizardSensors.map((s, idx) => ({
+      ...s,
+      label: document.getElementById(`adm-label-${idx}`).value,
+      lolo: parseFloat(document.getElementById(`adm-lolo-${idx}`).value),
+      lo: parseFloat(document.getElementById(`adm-lo-${idx}`).value),
+      hi: parseFloat(document.getElementById(`adm-hi-${idx}`).value),
+      hihi: parseFloat(document.getElementById(`adm-hihi-${idx}`).value),
     }));
 
-    trendsChart.data.datasets = datasets;
+    const res = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: authenticatedPassword, sensors: updated })
+    });
+
+    if (res.ok) {
+      wizardSensors = updated;
+      alert('Settings updated successfully!');
+    }
+  }
+
+  async function fetchUsageStats() {
+    const res = await fetch('/api/system');
+    const d = await res.json();
+    document.getElementById('sys-cpu').innerText = `${d.cpu}%`;
+    document.getElementById('sys-temp').innerText = `${d.cpuTemp}`;
+    document.getElementById('sys-mem').innerText = `${d.memUsed} / ${d.memTotal}`;
+    document.getElementById('sys-disk').innerText = `${d.diskUsed} (${d.diskPct}%)`;
+    document.getElementById('sys-platform').innerText = d.platform;
+    document.getElementById('sys-uptime').innerText = `${Math.floor(d.uptime / 3600)}h ${Math.floor((d.uptime % 3600) / 60)}m`;
+    document.getElementById('sys-dbsize').innerText = d.dbSize;
+  }
+
+  function initChart() {
+    const ctx = document.getElementById('trendsChartCanvas').getContext('2d');
+    trendsChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: [], datasets: [] },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
+
+  async function loadTrends(range) {
+    const res = await fetch(`/api/history?range=${range}`);
+    const r = await res.json();
+    if (!r.ok || !trendsChart) return;
+    const channelData = {};
+    r.data.forEach(item => {
+      if (!channelData[item.channel]) channelData[item.channel] = [];
+      channelData[item.channel].push({ x: new Date(item.time).toLocaleTimeString(), y: item.value });
+    });
+    const colors = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#f97316'];
+    trendsChart.data.datasets = Object.keys(channelData).map((ch, i) => ({
+      label: ch, data: channelData[ch], borderColor: colors[i % colors.length], borderWidth: 2, tension: 0.3, pointRadius: 0
+    }));
     trendsChart.update();
   }
 
   async function fetchHistory() {
     const sensor = document.getElementById('hist-sensor').value;
     const range = document.getElementById('hist-range').value;
-
     const res = await fetch(`/api/history?range=${range}&sensor=${sensor}`);
-    const result = await res.json();
-    historyData = result.data || [];
-
-    const tbody = document.getElementById('history-table-body');
+    const r = await res.json();
+    historyData = r.data || [];
+    const tbody = document.getElementById('history-rows');
     tbody.innerHTML = '';
-
-    if (historyData.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">No records found</td></tr>`;
-      return;
-    }
-
-    historyData.slice(0, 200).forEach(r => {
+    historyData.slice(0, 150).forEach(item => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${new Date(r.time).toLocaleString()}</td>
-        <td><strong>${r.channel}</strong></td>
-        <td>${r.value.toFixed(1)} °C</td>
-        <td><span class="alarm-status-pill status-normal">NORMAL</span></td>
-      `;
+      tr.innerHTML = `<td style="padding:10px;">${new Date(item.time).toLocaleString()}</td><td style="padding:10px;">${item.channel}</td><td style="padding:10px;">${item.value.toFixed(1)} °C</td><td style="padding:10px;"><span class="alarm-status-pill status-normal">NORMAL</span></td>`;
       tbody.appendChild(tr);
     });
   }
 
   function exportData(type) {
-    if (historyData.length === 0) return alert('Please query data first!');
-
+    if (historyData.length === 0) return alert('Please query logs first!');
     if (type === 'csv') {
       let csv = 'Timestamp,Channel,Temperature\n';
       historyData.forEach(r => csv += `"${r.time}","${r.channel}",${r.value}\n`);
@@ -870,88 +1085,26 @@
     } else if (type === 'excel') {
       const ws = XLSX.utils.json_to_sheet(historyData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'History');
-      XLSX.writeFile(wb, 'HeatWatch_Report.xlsx');
+      XLSX.utils.book_append_sheet(wb, ws, 'Logs');
+      XLSX.writeFile(wb, 'HeatWatch_Telemetry_Report.xlsx');
     } else if (type === 'pdf') {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       doc.text('HeatWatch 3 — Telemetry Report', 14, 15);
-      doc.autoTable({
-        head: [['Timestamp', 'Channel', 'Value (°C)']],
-        body: historyData.slice(0, 100).map(r => [new Date(r.time).toLocaleString(), r.channel, r.value.toFixed(1)])
-      });
+      doc.autoTable({ head: [['Timestamp', 'Channel', 'Value (°C)']], body: historyData.slice(0, 100).map(r => [new Date(r.time).toLocaleString(), r.channel, r.value.toFixed(1)]) });
       doc.save('HeatWatch_Report.pdf');
     }
   }
 
-  function renderSettingsForm() {
-    const grid = document.getElementById('settings-form-grid');
-    grid.innerHTML = '';
-
-    sensorConfig.forEach((s, i) => {
-      const card = document.createElement('div');
-      card.className = 'settings-card';
-      card.innerHTML = `
-        <h4>${s.id} Configuration</h4>
-        <div class="form-group">
-          <label>Label Name</label>
-          <input type="text" id="cfg-label-${i}" value="${s.label}">
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label>LoLo</label><input type="number" id="cfg-lolo-${i}" value="${s.lolo}"></div>
-          <div class="form-group"><label>Lo</label><input type="number" id="cfg-lo-${i}" value="${s.lo}"></div>
-          <div class="form-group"><label>Hi</label><input type="number" id="cfg-hi-${i}" value="${s.hi}"></div>
-          <div class="form-group"><label>HiHi</label><input type="number" id="cfg-hihi-${i}" value="${s.hihi}"></div>
-        </div>
-      `;
-      grid.appendChild(card);
-    });
-  }
-
-  async function saveSettings() {
-    const updated = sensorConfig.map((s, i) => ({
-      ...s,
-      label: document.getElementById(`cfg-label-${i}`).value,
-      lolo: parseFloat(document.getElementById(`cfg-lolo-${i}`).value),
-      lo: parseFloat(document.getElementById(`cfg-lo-${i}`).value),
-      hi: parseFloat(document.getElementById(`cfg-hi-${i}`).value),
-      hihi: parseFloat(document.getElementById(`cfg-hihi-${i}`).value),
-    }));
-
-    const res = await fetch('/api/config', {
+  async function deleteDataPrompt() {
+    if (!confirm('Are you sure you want to PERMANENTLY DELETE all historical data?')) return;
+    const res = await fetch('/api/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated)
+      body: JSON.stringify({ password: authenticatedPassword })
     });
-
-    if (res.ok) alert('Settings saved successfully!');
+    if (res.ok) alert('Historical data deleted successfully!');
   }
-
-  async function fetchSystemStats() {
-    const res = await fetch('/api/system');
-    const data = await res.json();
-
-    document.getElementById('sys-cpu').innerText = `${data.cpu}%`;
-    document.getElementById('sys-temp').innerText = `${data.cpuTemp}`;
-    document.getElementById('sys-mem').innerText = `${data.memUsed} / ${data.memTotal}`;
-    document.getElementById('sys-disk').innerText = `${data.diskUsed} (${data.diskPct}%)`;
-    document.getElementById('sys-platform').innerText = data.platform || 'Linux aarch64';
-    document.getElementById('sys-uptime').innerText = `${Math.floor(data.uptime / 3600)}h ${Math.floor((data.uptime % 3600) / 60)}m`;
-    document.getElementById('sys-dbsize').innerText = data.dbSize || '--';
-  }
-
-  function toggleTheme() {
-    document.documentElement.classList.toggle('light-mode');
-  }
-
-  function toggleFullscreen() {
-    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-    else if (document.exitFullscreen) document.exitFullscreen();
-  }
-
-  window.onload = () => {
-    initWebSocket();
-  };
 </script>
 </body>
 </html>

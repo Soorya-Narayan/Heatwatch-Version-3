@@ -4,7 +4,7 @@
 AUTOSTART_DIR="$HOME/.config/autostart"
 DESKTOP_FILE="$AUTOSTART_DIR/heatwatch-kiosk.desktop"
 
-echo "[HeatWatch 3] Configuring Kiosk Autostart..."
+echo "[HeatWatch 3] Setting up Kiosk Autostart..."
 
 mkdir -p "$AUTOSTART_DIR"
 
@@ -18,4 +18,4 @@ EOF
 
 chmod +x "$DESKTOP_FILE"
 
-echo "[HeatWatch 3] Kiosk autostart successfully created at: $DESKTOP_FILE"
+echo "[HeatWatch 3] Kiosk autostart successfully configured at: $DESKTOP_FILE"

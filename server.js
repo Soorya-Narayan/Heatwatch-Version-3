@@ -18,12 +18,12 @@ const INFLUX_URL    = 'http://localhost:8086';
 const INFLUX_TOKEN  = '9upI6oc3KDqHU64Gfq_2JJ9zjC4hZId-4w6qbenxgIEpvJU0TdIDp3dzgjEV5g8idgwC3dO2X58j8Vo5b33BnQ==';
 const INFLUX_ORG    = 'heatwatch';
 const INFLUX_BUCKET = 'temperature_data';
-const CONFIG_FILE   = path.join(__dirname, 'channel_config.json');
+const SETUP_FILE    = path.join(__dirname, 'setup_config.json');
 
 const influxDB = new InfluxDB({ url: INFLUX_URL, token: INFLUX_TOKEN });
 let queryApi = influxDB.getQueryApi(INFLUX_ORG);
 
-// Default 8-Channel Industrial Telemetry Configuration
+// Default 8-Channel RTD Sensor Template
 const DEFAULT_SENSORS = [
   { id: 'CH1', name: 'Boiler_Temp',          label: 'Boiler Temperature',      hihi: 95, hi: 85, lo: 20, lolo: 10, unit: '°C' },
   { id: 'CH2', name: 'Heat_Exchanger_Inlet',  label: 'Heat Exchanger Inlet',    hihi: 90, hi: 80, lo: 15, lolo: 5,  unit: '°C' },
@@ -35,28 +35,28 @@ const DEFAULT_SENSORS = [
   { id: 'CH8', name: 'Ambient_Plant_Room',   label: 'Ambient Plant Room',     hihi: 45, hi: 38, lo: 10, lolo: 5,  unit: '°C' },
 ];
 
-function loadConfig() {
+function loadSetupState() {
   try {
-    if (fs.existsSync(CONFIG_FILE)) {
-      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    if (fs.existsSync(SETUP_FILE)) {
+      return JSON.parse(fs.readFileSync(SETUP_FILE, 'utf8'));
     }
   } catch (e) {
-    console.error('Failed to load channel config:', e.message);
+    console.error('Error loading setup file:', e.message);
   }
-  return JSON.parse(JSON.stringify(DEFAULT_SENSORS));
+  return { isConfigured: false, user: null, sensors: DEFAULT_SENSORS };
 }
 
-function saveConfig(cfg) {
+function saveSetupState(data) {
   try {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2));
+    fs.writeFileSync(SETUP_FILE, JSON.stringify(data, null, 2));
   } catch (e) {
-    console.error('Failed to save channel config:', e.message);
+    console.error('Error saving setup file:', e.message);
   }
 }
 
-let SENSORS = loadConfig();
+let SYSTEM_STATE = loadSetupState();
 
-// CPU calculation helper
+// CPU Calculation Helper
 function getCpuUsageTicks() {
   const cpus = os.cpus();
   let user = 0, nice = 0, sys = 0, idle = 0, irq = 0;
@@ -81,7 +81,76 @@ function getCpuUsagePercent() {
   return Math.round(100 * (1 - idleDiff / totalDiff));
 }
 
-// REST API Endpoints
+// -------------------------------------------------------------
+// API Endpoints
+// -------------------------------------------------------------
+
+// 1. Get Wizard Setup Status
+app.get('/api/setup-status', (req, res) => {
+  res.json({
+    isConfigured: !!SYSTEM_STATE.isConfigured,
+    user: SYSTEM_STATE.user ? {
+      username: SYSTEM_STATE.user.username,
+      role: SYSTEM_STATE.user.role,
+      accessLevel: SYSTEM_STATE.user.accessLevel
+    } : null,
+    sensors: SYSTEM_STATE.sensors || DEFAULT_SENSORS
+  });
+});
+
+// 2. Submit Initial Setup Wizard
+app.post('/api/setup', (req, res) => {
+  const { username, role, accessLevel, password, sensors } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and Password are required' });
+  }
+
+  SYSTEM_STATE = {
+    isConfigured: true,
+    user: { username, role: role || 'Administrator', accessLevel: accessLevel || 'Full Access', password },
+    sensors: sensors && sensors.length === 8 ? sensors : DEFAULT_SENSORS
+  };
+
+  saveSetupState(SYSTEM_STATE);
+  console.log(`[HeatWatch 3] Initial setup completed for user: ${username}`);
+  res.json({ ok: true });
+});
+
+// 3. Verify Password for Settings Access
+app.post('/api/verify-password', (req, res) => {
+  const { password } = req.body;
+  if (!SYSTEM_STATE.user || !SYSTEM_STATE.user.password) {
+    return res.status(400).json({ success: false, error: 'System not set up yet' });
+  }
+
+  if (password === SYSTEM_STATE.user.password) {
+    return res.json({ success: true });
+  } else {
+    return res.json({ success: false, error: 'Incorrect Password' });
+  }
+});
+
+// 4. Update Sensor Threshold Configurations
+app.get('/api/config', (req, res) => res.json(SYSTEM_STATE.sensors || DEFAULT_SENSORS));
+
+app.post('/api/config', (req, res) => {
+  const { password, sensors } = req.body;
+  
+  if (SYSTEM_STATE.user && password !== SYSTEM_STATE.user.password) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid password' });
+  }
+
+  if (Array.isArray(sensors) && sensors.length === 8) {
+    SYSTEM_STATE.sensors = sensors;
+    saveSetupState(SYSTEM_STATE);
+    res.json({ ok: true });
+  } else {
+    res.status(400).json({ error: 'Invalid sensor array' });
+  }
+});
+
+// 5. System Hardware Diagnostics
 app.get('/api/system', (req, res) => {
   try {
     let cpuTemp = '--';
@@ -136,31 +205,7 @@ app.get('/api/system', (req, res) => {
   }
 });
 
-app.get('/api/config', (req, res) => res.json(SENSORS));
-
-app.post('/api/config', (req, res) => {
-  if (Array.isArray(req.body) && req.body.length > 0) {
-    SENSORS = req.body;
-    saveConfig(SENSORS);
-    res.json({ ok: true });
-  } else {
-    res.status(400).json({ error: 'Invalid config format' });
-  }
-});
-
-app.get('/api/stats', async (req, res) => {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const q = `from(bucket:"${INFLUX_BUCKET}") |> range(start:${todayStart.toISOString()}) |> filter(fn:(r)=>r._measurement=="temperature") |> count()`;
-  try {
-    const rows = await queryApi.collectRows(q);
-    const total = rows.reduce((acc, r) => acc + (r._value || 0), 0);
-    res.json({ total });
-  } catch (e) {
-    res.json({ total: 0 });
-  }
-});
-
+// 6. Query Time-Series History
 app.get('/api/history', async (req, res) => {
   const { range = '1h', sensor = 'all' } = req.query;
   let rangeStart = '-1h';
@@ -192,18 +237,53 @@ app.get('/api/history', async (req, res) => {
   }
 });
 
-// Live Simulation Generator for smooth offline testing
-let simValues = DEFAULT_SENSORS.map((s, i) => (22.5 + i * 8.0));
+// 7. Delete Historical Data (Protected)
+app.post('/api/delete', async (req, res) => {
+  const { password, start, stop } = req.body;
+
+  if (SYSTEM_STATE.user && password !== SYSTEM_STATE.user.password) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid password' });
+  }
+
+  try {
+    const response = await fetch(`${INFLUX_URL}/api/v2/delete?org=${INFLUX_ORG}&bucket=${INFLUX_BUCKET}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${INFLUX_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        start: new Date(start || 0).toISOString(),
+        stop: new Date(stop || Date.now()).toISOString(),
+        predicate: '_measurement="temperature"'
+      })
+    });
+    if (response.ok) {
+      res.json({ ok: true, message: 'Historical data deleted successfully' });
+    } else {
+      const errText = await response.text();
+      res.status(500).json({ error: errText });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// -------------------------------------------------------------
+// Live Telemetry WebSocket Broadcasting
+// -------------------------------------------------------------
+let simValues = (SYSTEM_STATE.sensors || DEFAULT_SENSORS).map((s, i) => (22.5 + i * 7.5));
 
 function broadcastTelemetry() {
   if (wss.clients.size === 0) return;
 
   const now = new Date().toISOString();
-  
-  const packet = SENSORS.map((s, i) => {
+  const currentSensors = SYSTEM_STATE.sensors || DEFAULT_SENSORS;
+
+  const packet = currentSensors.map((s, i) => {
     let jitter = (Math.random() - 0.49) * 0.7;
     simValues[i] = Math.max(-5, Math.min(115, simValues[i] + jitter));
-    
+
     return {
       id: s.id,
       name: s.name,
@@ -223,10 +303,15 @@ function broadcastTelemetry() {
 setInterval(broadcastTelemetry, 2000);
 
 wss.on('connection', ws => {
-  ws.send(JSON.stringify({ type: 'config', sensors: SENSORS }));
+  ws.send(JSON.stringify({
+    type: 'init',
+    isConfigured: !!SYSTEM_STATE.isConfigured,
+    user: SYSTEM_STATE.user ? { username: SYSTEM_STATE.user.username, role: SYSTEM_STATE.user.role } : null,
+    sensors: SYSTEM_STATE.sensors || DEFAULT_SENSORS
+  }));
 });
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-  console.log(`[HeatWatch 3] Dashboard server listening on port ${PORT}`);
+  console.log(`[HeatWatch 3] Server running on port ${PORT}`);
 });
