@@ -1,0 +1,19 @@
+{
+  "isConfigured": true,
+  "user": {
+    "username": "admin",
+    "role": "Administrator",
+    "accessLevel": "Full Access",
+    "password": "admin"
+  },
+  "sensors": [
+    { "id": "CH1", "name": "Boiler_Temp", "label": "Boiler Temperature", "hihi": 95, "hi": 85, "lo": 20, "lolo": 10, "unit": "°C" },
+    { "id": "CH2", "name": "Heat_Exchanger_Inlet", "label": "Heat Exchanger Inlet", "hihi": 90, "hi": 80, "lo": 15, "lolo": 5, "unit": "°C" },
+    { "id": "CH3", "name": "Heat_Exchanger_Outlet", "label": "Heat Exchanger Outlet", "hihi": 85, "hi": 75, "lo": 10, "lolo": 5, "unit": "°C" },
+    { "id": "CH4", "name": "Chilled_Water_Supply", "label": "Chilled Water Supply", "hihi": 15, "hi": 12, "lo": 2, "lolo": 0, "unit": "°C" },
+    { "id": "CH5", "name": "Primary_Storage_Tank", "label": "Primary Storage Tank", "hihi": 10, "hi": 8, "lo": 2, "lolo": 0, "unit": "°C" },
+    { "id": "CH6", "name": "Secondary_Storage", "label": "Secondary Storage Tank", "hihi": 10, "hi": 8, "lo": 2, "lolo": 0, "unit": "°C" },
+    { "id": "CH7", "name": "Condenser_Loop", "label": "Condenser Loop", "hihi": 55, "hi": 45, "lo": 10, "lolo": 5, "unit": "°C" },
+    { "id": "CH8", "name": "Ambient_Plant_Room", "label": "Ambient Plant Room", "hihi": 45, "hi": 38, "lo": 10, "lolo": 5, "unit": "°C" }
+  ]
+}

@@ -780,6 +780,7 @@
 
   window.onload = async () => {
     setupVirtualKeyboardListeners();
+    renderMainTelemetryGrid(wizardSensors.map(s => ({ ...s, val: '0.0', offline: false })));
 
     try {
       const res = await fetch('/api/setup-status');
@@ -789,6 +790,8 @@
       if (data.user) document.getElementById('drawer-user-display').innerText = data.user.username;
       if (data.sensors) wizardSensors = data.sensors;
     } catch(e) {}
+
+    initWebSocket();
 
     setTimeout(() => {
       dismissAppleBootScreen();
@@ -804,7 +807,6 @@
     if (isSystemConfigured) {
       document.getElementById('wizard-container').style.display = 'none';
       document.getElementById('main-app').style.display = 'flex';
-      initWebSocket();
     } else {
       document.getElementById('wizard-container').style.display = 'flex';
       renderWizardSensorItems();
@@ -972,6 +974,14 @@
         renderMainTelemetryGrid(msg.sensors);
       }
     };
+
+    ws.onclose = () => {
+      setTimeout(initWebSocket, 2000);
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
   }
 
   function renderMainTelemetryGrid(sensors) {
@@ -980,24 +990,25 @@
 
     sensors.forEach(s => {
       const isOffline = s.offline || s.val === '--';
-      const val = isOffline ? '--' : parseFloat(s.val);
+      const valStr = isOffline ? '--' : s.val;
+      const valNum = isOffline ? 0 : parseFloat(s.val);
       
       let statusClass = 'status-normal', statusText = 'NORMAL', cardAlarmClass = '';
 
       if (isOffline) {
         statusClass = 'status-offline';
-        statusText = 'FAULT / OFFLINE';
-      } else if (val >= s.hihi) {
+        statusText = 'OFFLINE';
+      } else if (valNum >= s.hihi) {
         statusClass = 'status-alarm'; statusText = 'CRITICAL HIHI'; cardAlarmClass = 'alarm-hihi';
-      } else if (val <= s.lolo) {
+      } else if (valNum <= s.lolo) {
         statusClass = 'status-alarm'; statusText = 'CRITICAL LOLO'; cardAlarmClass = 'alarm-lolo';
-      } else if (val >= s.hi) {
+      } else if (valNum >= s.hi) {
         statusClass = 'status-warning'; statusText = 'WARNING HI';
-      } else if (val <= s.lo) {
+      } else if (valNum <= s.lo) {
         statusClass = 'status-warning'; statusText = 'WARNING LO';
       }
 
-      const pct = isOffline ? 0 : Math.max(0, Math.min(100, ((val - s.lolo) / (s.hihi - s.lolo)) * 100));
+      const pct = isOffline ? 0 : Math.max(0, Math.min(100, ((valNum - s.lolo) / (s.hihi - s.lolo)) * 100));
 
       const card = document.createElement('div');
       card.className = `channel-card ${cardAlarmClass}`;
@@ -1007,7 +1018,7 @@
           <span class="alarm-status-pill ${statusClass}">${statusText}</span>
         </div>
         <div class="temp-display">
-          <span class="temp-val">${s.val}</span>
+          <span class="temp-val">${valStr}</span>
           <span class="temp-unit">${s.unit}</span>
         </div>
         <div>
