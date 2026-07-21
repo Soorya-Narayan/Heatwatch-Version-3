@@ -122,14 +122,14 @@
     border: 1px solid var(--border-color);
     border-radius: 20px;
     box-shadow: var(--shadow-main);
-    width: 92%;
-    max-width: 700px;
-    padding: 24px 32px;
+    width: 94%;
+    max-width: 740px;
+    padding: 20px 28px;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 14px;
+    gap: 12px;
     animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -140,7 +140,7 @@
 
   .wizard-title {
     font-family: var(--font-heading);
-    font-size: 1.65rem;
+    font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -0.5px;
     background: linear-gradient(135deg, var(--text-main) 30%, var(--accent-cyan));
@@ -149,10 +149,10 @@
   }
 
   .wizard-subtitle {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: var(--text-muted);
-    max-width: 500px;
-    line-height: 1.4;
+    max-width: 520px;
+    line-height: 1.35;
   }
 
   .wizard-progress { display: flex; gap: 8px; margin-bottom: 2px; }
@@ -167,44 +167,50 @@
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--border-color);
     color: var(--text-main);
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 0.88rem;
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 0.85rem;
     outline: none;
     transition: border-color 0.2s ease;
   }
   input:focus, select:focus { border-color: var(--accent-blue); }
 
-  /* ZERO-SCROLL 2x2 SENSOR GRID */
-  .sensor-setup-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+  /* COMPACT SINGLE SCREEN 8-CHANNEL CONFIGURATION TABLE */
+  .sensor-config-table {
     width: 100%;
-    overflow: hidden;
+    border-collapse: collapse;
+    font-size: 0.8rem;
   }
 
-  .sensor-setup-item {
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 10px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  .sensor-config-table th {
+    padding: 6px 8px;
+    background: rgba(0, 0, 0, 0.4);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    text-transform: uppercase;
     text-align: left;
+    border-bottom: 1px solid var(--border-color);
   }
 
-  .thresh-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  .thresh-inputs input { padding: 6px 4px; font-size: 0.78rem; text-align: center; }
+  .sensor-config-table td {
+    padding: 3px 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .sensor-config-table input {
+    padding: 4px 6px;
+    font-size: 0.8rem;
+    height: 28px;
+    width: 100%;
+  }
 
   .btn {
     background: var(--accent-blue);
     color: #ffffff;
     border: none;
-    padding: 9px 18px;
+    padding: 8px 16px;
     border-radius: 8px;
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -435,7 +441,7 @@
     </div>
 
     <!-- Step 2: Credentials -->
-    <div id="wizard-step-2" style="display: none; width: 100%; flex-direction: column; gap: 14px;">
+    <div id="wizard-step-2" style="display: none; width: 100%; flex-direction: column; gap: 12px;">
       <h2 class="wizard-title">Setup Administrator Profile</h2>
       <p class="wizard-subtitle">Create your admin account and set a security password to protect settings.</p>
 
@@ -473,22 +479,36 @@
         </div>
       </div>
 
-      <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; margin-top: 10px;">
+      <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; margin-top: 6px;">
         <button class="btn btn-secondary" onclick="goToWizardStep(1)">Back</button>
         <button class="btn" onclick="validateStep2()">Next: RTD Sensors →</button>
       </div>
     </div>
 
-    <!-- Step 3: RTD Sensors (2-Page Zero-Scroll Design) -->
-    <div id="wizard-step-3" style="display: none; width: 100%; flex-direction: column; gap: 12px;">
-      <h2 class="wizard-title" id="wz-step3-title">Configure RTD Sensors</h2>
-      <p class="wizard-subtitle" id="wz-step3-subtitle">Set names and threshold limits (HiHi, Hi, Lo, LoLo) for your sensors.</p>
+    <!-- Step 3: ALL 8 RTD SENSORS SINGLE SCREEN (ZERO SCROLL) -->
+    <div id="wizard-step-3" style="display: none; width: 100%; flex-direction: column; gap: 10px;">
+      <h2 class="wizard-title">Configure All 8 RTD Sensors</h2>
+      <p class="wizard-subtitle">Set channel labels and threshold limits (LoLo, Lo, Hi, HiHi) for all 8 channels.</p>
 
-      <div class="sensor-setup-grid" id="wizard-sensor-items"></div>
+      <div style="width: 100%; overflow: hidden; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 10px; padding: 4px 6px;">
+        <table class="sensor-config-table">
+          <thead>
+            <tr>
+              <th style="width: 48px; text-align: center;">CH</th>
+              <th>Channel Label Name</th>
+              <th style="width: 65px; text-align: center;">LoLo</th>
+              <th style="width: 65px; text-align: center;">Lo</th>
+              <th style="width: 65px; text-align: center;">Hi</th>
+              <th style="width: 65px; text-align: center;">HiHi</th>
+            </tr>
+          </thead>
+          <tbody id="wizard-sensor-rows"></tbody>
+        </table>
+      </div>
 
-      <div style="display: flex; gap: 12px; width: 100%; justify-content: space-between; margin-top: 6px;">
-        <button class="btn btn-secondary" id="wz-step3-back-btn" onclick="wizardStep3Back()">Back</button>
-        <button class="btn" id="wz-step3-next-btn" onclick="wizardStep3Next()">Next →</button>
+      <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; margin-top: 4px;">
+        <button class="btn btn-secondary" onclick="goToWizardStep(2)">Back</button>
+        <button class="btn" onclick="wizardStep3Next()">Next: Review →</button>
       </div>
     </div>
 
@@ -753,7 +773,6 @@
   ];
 
   let isSystemConfigured = false;
-  let wizardSensorPage = 1; // 1 = Channels 1-4, 2 = Channels 5-8
   let activeInputElem = null;
   let isShiftActive = false;
   let isNumpadMode = false;
@@ -791,7 +810,7 @@
       initWebSocket();
     } else {
       document.getElementById('wizard-container').style.display = 'flex';
-      renderWizardSensorItems(1);
+      renderWizardSensorItems();
     }
   }
 
@@ -872,77 +891,42 @@
       const dot = document.getElementById(`dot-${i}`);
       if (dot) dot.classList.toggle('active', i <= step);
     }
-    if (step === 3) renderWizardSensorItems(wizardSensorPage);
+    if (step === 3) renderWizardSensorItems();
   }
 
-  // 2-PAGE ZERO-SCROLL SENSOR RENDERER
-  function renderWizardSensorItems(page = 1) {
-    wizardSensorPage = page;
-    const container = document.getElementById('wizard-sensor-items');
-    container.innerHTML = '';
+  // ALL 8 SENSORS RENDERED IN ONE TABULAR GRID
+  function renderWizardSensorItems() {
+    const tbody = document.getElementById('wizard-sensor-rows');
+    tbody.innerHTML = '';
 
-    document.getElementById('wz-step3-title').innerText = page === 1 ? "Configure RTD Sensors (1 to 4)" : "Configure RTD Sensors (5 to 8)";
-    document.getElementById('wz-step3-subtitle').innerText = page === 1 ? "Set labels & alarm thresholds for Channels CH1 through CH4." : "Set labels & alarm thresholds for Channels CH5 through CH8.";
-
-    document.getElementById('wz-step3-back-btn').innerText = page === 1 ? "Back" : "← Channels 1-4";
-    document.getElementById('wz-step3-next-btn').innerText = page === 1 ? "Next: Channels 5-8 →" : "Next: Review →";
-
-    const startIndex = page === 1 ? 0 : 4;
-    const endIndex = page === 1 ? 4 : 8;
-
-    for (let idx = startIndex; idx < endIndex; idx++) {
-      const s = wizardSensors[idx];
-      const div = document.createElement('div');
-      div.className = 'sensor-setup-item';
-      div.innerHTML = `
-        <div style="font-weight: 700; font-size: 0.8rem; color: var(--accent-cyan);">${s.id}</div>
-        <input type="text" id="wz-label-${idx}" value="${s.label}" placeholder="Channel Label">
-        <div class="thresh-inputs">
-          <input type="number" id="wz-lolo-${idx}" value="${s.lolo}" placeholder="LoLo">
-          <input type="number" id="wz-lo-${idx}" value="${s.lo}" placeholder="Lo">
-          <input type="number" id="wz-hi-${idx}" value="${s.hi}" placeholder="Hi">
-          <input type="number" id="wz-hihi-${idx}" value="${s.hihi}" placeholder="HiHi">
-        </div>
+    wizardSensors.forEach((s, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="text-align: center; font-weight: 700; color: var(--accent-cyan);">${s.id}</td>
+        <td><input type="text" id="wz-label-${idx}" value="${s.label}" placeholder="Channel Label"></td>
+        <td><input type="number" id="wz-lolo-${idx}" value="${s.lolo}" style="text-align: center;"></td>
+        <td><input type="number" id="wz-lo-${idx}" value="${s.lo}" style="text-align: center;"></td>
+        <td><input type="number" id="wz-hi-${idx}" value="${s.hi}" style="text-align: center;"></td>
+        <td><input type="number" id="wz-hihi-${idx}" value="${s.hihi}" style="text-align: center;"></td>
       `;
-      container.appendChild(div);
-    }
+      tbody.appendChild(tr);
+    });
   }
 
-  function saveCurrentWizardSensorPageValues() {
-    const startIndex = wizardSensorPage === 1 ? 0 : 4;
-    const endIndex = wizardSensorPage === 1 ? 4 : 8;
-
-    for (let idx = startIndex; idx < endIndex; idx++) {
-      const labelInput = document.getElementById(`wz-label-${idx}`);
-      if (labelInput) {
-        wizardSensors[idx] = {
-          ...wizardSensors[idx],
-          label: labelInput.value || wizardSensors[idx].label,
-          lolo: parseFloat(document.getElementById(`wz-lolo-${idx}`).value),
-          lo: parseFloat(document.getElementById(`wz-lo-${idx}`).value),
-          hi: parseFloat(document.getElementById(`wz-hi-${idx}`).value),
-          hihi: parseFloat(document.getElementById(`wz-hihi-${idx}`).value),
-        };
-      }
-    }
+  function collectWizardSensors() {
+    return wizardSensors.map((s, idx) => ({
+      ...s,
+      label: document.getElementById(`wz-label-${idx}`).value || s.label,
+      lolo: parseFloat(document.getElementById(`wz-lolo-${idx}`).value),
+      lo: parseFloat(document.getElementById(`wz-lo-${idx}`).value),
+      hi: parseFloat(document.getElementById(`wz-hi-${idx}`).value),
+      hihi: parseFloat(document.getElementById(`wz-hihi-${idx}`).value),
+    }));
   }
 
   function wizardStep3Next() {
-    saveCurrentWizardSensorPageValues();
-    if (wizardSensorPage === 1) {
-      renderWizardSensorItems(2);
-    } else {
-      goToWizardStep(4);
-    }
-  }
-
-  function wizardStep3Back() {
-    saveCurrentWizardSensorPageValues();
-    if (wizardSensorPage === 2) {
-      renderWizardSensorItems(1);
-    } else {
-      goToWizardStep(2);
-    }
+    wizardSensors = collectWizardSensors();
+    goToWizardStep(4);
   }
 
   function validateStep2() {
