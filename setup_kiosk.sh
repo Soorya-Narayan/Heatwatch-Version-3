@@ -46,7 +46,7 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable --now heatwatch-dashboard heatwatch-poller
 
-# 4. Configure Desktop Kiosk Autostart
+# 4. Configure Desktop Kiosk Autostart (Bypassing Keyring Password Prompts)
 AUTOSTART_DIR="$HOME/.config/autostart"
 DESKTOP_FILE="$AUTOSTART_DIR/heatwatch-kiosk.desktop"
 
@@ -56,10 +56,13 @@ cat > "$DESKTOP_FILE" << 'EOF'
 [Desktop Entry]
 Type=Application
 Name=HeatWatch 3 Kiosk
-Exec=/bin/bash -c "sleep 6 && chromium --noerrdialogs --disable-infobars --kiosk --app=http://localhost:3001"
+Exec=/bin/bash -c "sleep 4 && chromium --noerrdialogs --disable-infobars --password-store=basic --no-first-run --disable-session-crashed-bubble --fast --fast-start --kiosk --app=http://localhost:3001"
 X-GNOME-Autostart-enabled=true
 EOF
 
 chmod +x "$DESKTOP_FILE"
 
-echo "[HeatWatch 3] Services started & Kiosk autostart configured successfully!"
+# 5. Clear Chromium Keyring Lock if Present
+rm -rf ~/.config/chromium/Default/Login\ Data* 2>/dev/null
+
+echo "[HeatWatch 3] Services started & Kiosk autostart (Keyring Bypass) configured successfully!"
