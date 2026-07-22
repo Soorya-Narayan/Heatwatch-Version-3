@@ -687,12 +687,21 @@
 
     <section id="view-trends" class="view-panel">
       <div class="chart-card">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <h3>Multi-Channel Realtime Trends</h3>
-          <div style="display: flex; gap: 6px;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
             <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="loadTrends('1h')">1 Hour</button>
             <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="loadTrends('6h')">6 Hours</button>
             <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="loadTrends('24h')">24 Hours</button>
+            <div style="width: 1px; height: 18px; background: rgba(255,255,255,0.15); margin: 0 4px;"></div>
+            <button class="btn" style="padding: 4px 12px; font-size: 0.78rem; background: linear-gradient(135deg, #10b981, #059669); border: none;" onclick="exportTrendsCSV()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 3px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Export CSV
+            </button>
+            <button class="btn" style="padding: 4px 12px; font-size: 0.78rem; background: linear-gradient(135deg, #3b82f6, #2563eb); border: none;" onclick="exportTrendsPDF()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 3px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              Download PDF
+            </button>
           </div>
         </div>
         <div style="flex: 1; min-height: 380px; position: relative; width: 100%; height: 100%;">
@@ -1514,7 +1523,13 @@
     });
   }
 
+  let currentTrendRangeLabel = '1 Hour';
+
   async function loadTrends(range) {
+    if (range === '6h') currentTrendRangeLabel = '6 Hours';
+    else if (range === '24h') currentTrendRangeLabel = '24 Hours';
+    else currentTrendRangeLabel = '1 Hour';
+
     if (!trendsChart) initChart();
 
     let historyOk = false;
@@ -1561,6 +1576,183 @@
 
     trendsChart.resize();
     trendsChart.update();
+  }
+
+  function exportTrendsCSV() {
+    if (!trendsChart || !trendsChart.data || !trendsChart.data.labels || trendsChart.data.labels.length === 0) {
+      return alert('No trend data available to export!');
+    }
+
+    let csv = 'Timestamp,' + wizardSensors.map(s => `"${s.id} (${s.label})"`).join(',') + '\n';
+
+    trendsChart.data.labels.forEach((lbl, idx) => {
+      const row = [`"${lbl}"`];
+      wizardSensors.forEach(s => {
+        const ds = trendsChart.data.datasets.find(d => d.label.startsWith(s.id));
+        const val = (ds && ds.data[idx] !== undefined && ds.data[idx] !== null) ? ds.data[idx] : '';
+        row.push(val);
+      });
+      csv += row.join(',') + '\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `HeatWatch3_Trends_${currentTrendRangeLabel.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function exportTrendsPDF() {
+    if (!trendsChart || !trendsChart.data) return alert('Trends graph not initialized!');
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    let logoBase64 = null;
+    try {
+      const img = document.querySelector('.nav-logo');
+      if (img && img.complete && img.naturalWidth > 0) {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        logoBase64 = canvas.toDataURL('image/png');
+      }
+    } catch(e) {}
+
+    // -------------------------------------------------------------
+    // PAGE 1: Goose Logo + Header + Realtime Trend Graph Image
+    // -------------------------------------------------------------
+    if (logoBase64) {
+      doc.addImage(logoBase64, 'PNG', 14, 10, 42, 16);
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.setTextColor(15, 23, 42);
+    doc.text('HeatWatch 3 — Realtime Telemetry Trends', logoBase64 ? 60 : 14, 17);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, logoBase64 ? 60 : 14, 23);
+    doc.text(`System: HeatWatch 3 Kiosk | Range: ${currentTrendRangeLabel}`, logoBase64 ? 60 : 14, 28);
+
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.line(14, 32, pageWidth - 14, 32);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Realtime Multi-Channel Trend Graph', 14, 39);
+
+    const chartCanvas = document.getElementById('trendsChartCanvas');
+    if (chartCanvas) {
+      const chartImg = chartCanvas.toDataURL('image/png', 1.0);
+      doc.addImage(chartImg, 'PNG', 14, 43, pageWidth - 28, 95);
+    }
+
+    // Live Channel Summary Table on Page 1
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Live Channel Summary', 14, 145);
+
+    const summaryHead = [['Channel', 'Name / Location', 'Live Temp', 'Warning High', 'Alarm HIHI', 'Status']];
+    const summaryBody = wizardSensors.map(s => {
+      const isOff = s.offline || s.val === '--';
+      const valNum = isOff ? 0 : parseFloat(s.val);
+      let statusStr = 'NORMAL';
+      if (isOff) statusStr = 'OFFLINE';
+      else if (valNum >= s.hihi) statusStr = 'HIHI ALARM';
+      else if (valNum <= s.lolo) statusStr = 'LOLO ALARM';
+      else if (valNum >= s.hi) statusStr = 'WARNING HI';
+      else if (valNum <= s.lo) statusStr = 'WARNING LO';
+
+      return [
+        s.id,
+        s.label,
+        isOff ? '--' : `${s.val} °C`,
+        `${s.hi} °C`,
+        `${s.hihi} °C`,
+        statusStr
+      ];
+    });
+
+    doc.autoTable({
+      startY: 149,
+      head: summaryHead,
+      body: summaryBody,
+      theme: 'striped',
+      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 8.5, cellPadding: 2.2 },
+      columnStyles: { 0: { fontStyle: 'bold' } }
+    });
+
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text('HeatWatch 3 Industrial Temperature Monitoring System — Goose', 14, pageHeight - 8);
+    doc.text('Page 1 of 2', pageWidth - 28, pageHeight - 8);
+
+    // -------------------------------------------------------------
+    // PAGE 2: Goose Logo Header + Detailed Timestamp Values Table
+    // -------------------------------------------------------------
+    doc.addPage();
+
+    if (logoBase64) {
+      doc.addImage(logoBase64, 'PNG', 14, 8, 35, 14);
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Timestamped Telemetry Values Log', logoBase64 ? 54 : 14, 16);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Time Range: ${currentTrendRangeLabel} | Logged Samples: ${trendsChart.data.labels.length}`, logoBase64 ? 54 : 14, 21);
+
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.line(14, 25, pageWidth - 14, 25);
+
+    const logHead = [['Timestamp', ...wizardSensors.map(s => s.id)]];
+    const logBody = trendsChart.data.labels.map((lbl, idx) => {
+      const row = [lbl];
+      wizardSensors.forEach(s => {
+        const ds = trendsChart.data.datasets.find(d => d.label.startsWith(s.id));
+        const val = (ds && ds.data[idx] !== undefined && ds.data[idx] !== null) ? `${ds.data[idx]} °C` : '--';
+        row.push(val);
+      });
+      return row;
+    });
+
+    doc.autoTable({
+      startY: 28,
+      head: logHead,
+      body: logBody,
+      theme: 'grid',
+      headStyles: { fillColor: [14, 116, 144], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 8, cellPadding: 2, halign: 'center' },
+      columnStyles: { 0: { fontStyle: 'bold', halign: 'left' } }
+    });
+
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 2; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text('HeatWatch 3 Industrial Temperature Monitoring System — Goose', 14, pageHeight - 8);
+      doc.text(`Page ${i} of ${totalPages}`, pageWidth - 28, pageHeight - 8);
+    }
+
+    doc.save(`HeatWatch3_Trends_Report_${new Date().toISOString().slice(0,10)}.pdf`);
   }
 
   async function fetchHistory() {
