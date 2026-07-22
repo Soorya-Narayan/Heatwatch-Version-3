@@ -44,10 +44,12 @@ def poll_aime_hardware():
                 elem = tree.find(ch_key)
                 if elem is not None and elem.text:
                     try:
-                        channels[ch_key] = float(elem.text.strip())
+                        val = float(elem.text.strip())
+                        if val != 0 and -999 < val < 999:
+                            channels[ch_key] = val
                     except ValueError:
                         pass
-            if len(channels) == 8:
+            if channels:
                 return channels
     except Exception:
         pass
@@ -57,24 +59,27 @@ def poll_aime_hardware():
         resp = requests.get(f"{AIME_URL}/", timeout=2.5)
         if resp.status_code == 200:
             html = resp.text
-            # Regex to match CH1..CH8 and Process Value from HTML table
             for i in range(1, 9):
                 ch_key = f"CH{i}"
-                # Pattern: CH1 followed by td tag with numeric process value
-                pattern = rf'{ch_key}\s*</t[dh]>\s*<td[^>]*>\s*(-?\d+(?:\.\d+)?)'
-                match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+                # Strict cell matching: CH1 in td/th, then immediately next td content (prevents greedy skipping to next channels)
+                pattern = rf'{ch_key}\s*</t[dh]>\s*<td[^>]*>\s*([^<]+?)\s*</td>'
+                match = re.search(pattern, html, re.IGNORECASE)
                 if match:
                     try:
-                        channels[ch_key] = float(match.group(1))
+                        val = float(match.group(1).strip())
+                        if val != 0 and -999 < val < 999:
+                            channels[ch_key] = val
                     except ValueError:
                         pass
                 else:
-                    # Fallback pattern for inline or plain text layout
-                    pattern_alt = rf'{ch_key}.*?(-?\d+\.\d+)'
-                    match_alt = re.search(pattern_alt, html, re.IGNORECASE | re.DOTALL)
+                    # Line match fallback: CH1: 27.7
+                    pattern_alt = rf'{ch_key}\s*[:=]\s*(-?\d+(?:\.\d+)?)'
+                    match_alt = re.search(pattern_alt, html, re.IGNORECASE)
                     if match_alt:
                         try:
-                            channels[ch_key] = float(match_alt.group(1))
+                            val = float(match_alt.group(1))
+                            if val != 0 and -999 < val < 999:
+                                channels[ch_key] = val
                         except ValueError:
                             pass
             if channels:

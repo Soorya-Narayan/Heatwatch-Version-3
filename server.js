@@ -84,21 +84,38 @@ function parsePpiResponse(text) {
   const readings = {};
   if (!text) return readings;
 
+  // 1. Try XML tags: <CH1>27.7</CH1>
   for (let i = 1; i <= 8; i++) {
     const chKey = `CH${i}`;
-    const xmlMatch = text.match(new RegExp(`<${chKey}>\\s*(-?\\d+(?:\\.\\d+)?)\\s*</${chKey}>`, 'i'));
+    const xmlMatch = text.match(new RegExp(`<${chKey}>\\s*([^<]+)\\s*</${chKey}>`, 'i'));
     if (xmlMatch) {
-      readings[chKey] = parseFloat(xmlMatch[1]);
+      const num = parseFloat(xmlMatch[1].trim());
+      if (!isNaN(num) && num !== 0 && num > -999 && num < 999) {
+        readings[chKey] = num;
+      }
     }
   }
-  if (Object.keys(readings).length === 8) return readings;
+  if (Object.keys(readings).length > 0) return readings;
 
+  // 2. Strict HTML Table Cell Matching (prevents matching numbers from next channel or HTML attributes)
   for (let i = 1; i <= 8; i++) {
     const chKey = `CH${i}`;
-    const regex = new RegExp(`${chKey}[^0-9\\-]*?(-?\\d+(?:\\.\\d+)?)`, 'i');
-    const match = text.match(regex);
-    if (match) {
-      readings[chKey] = parseFloat(match[1]);
+    const cellRegex = new RegExp(`${chKey}\\s*</t[dh]>\\s*<td[^>]*>\\s*([^<]+?)\\s*</td>`, 'i');
+    const cellMatch = text.match(cellRegex);
+    if (cellMatch) {
+      const num = parseFloat(cellMatch[1].trim());
+      if (!isNaN(num) && num !== 0 && num > -999 && num < 999) {
+        readings[chKey] = num;
+      }
+    } else {
+      const lineRegex = new RegExp(`${chKey}\\s*[:=]\\s*(-?\\d+(?:\\.\\d+)?)`, 'i');
+      const lineMatch = text.match(lineRegex);
+      if (lineMatch) {
+        const num = parseFloat(lineMatch[1]);
+        if (!isNaN(num) && num !== 0 && num > -999 && num < 999) {
+          readings[chKey] = num;
+        }
+      }
     }
   }
   return readings;
@@ -389,14 +406,15 @@ async function broadcastTelemetry() {
 
   const packet = currentSensors.map(s => {
     const rawVal = latestReadings[s.id];
-    const hasReading = rawVal !== undefined && rawVal !== null;
+    const numVal = parseFloat(rawVal);
+    const isOffline = rawVal === undefined || rawVal === null || isNaN(numVal) || numVal === 0 || numVal >= 999 || numVal <= -999;
 
     return {
       id: s.id,
       name: s.name,
       label: s.label,
-      val: hasReading ? parseFloat(rawVal).toFixed(1) : '--',
-      offline: !hasReading,
+      val: isOffline ? '--' : numVal.toFixed(1),
+      offline: isOffline,
       hihi: s.hihi, hi: s.hi, lo: s.lo, lolo: s.lolo, unit: s.unit || '°C'
     };
   });
