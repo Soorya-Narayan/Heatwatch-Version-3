@@ -147,12 +147,42 @@ async function fetchPpiHardwareDirect() {
 // -------------------------------------------------------------
 
 app.get('/api/ppi-debug', async (req, res) => {
-  const readings = await fetchPpiHardwareDirect();
-  res.json({
-    timestamp: new Date().toISOString(),
-    success: !!readings,
-    readings: readings || 'Hardware unreachable or no channels parsed'
-  });
+  const debugInfo = { timestamp: new Date().toISOString(), attempts: [] };
+  const urls = [
+    'http://192.168.1.2/',
+    'http://192.168.1.2/index.html',
+    'http://192.168.1.2/index.xml',
+    'http://192.168.1.2/monitoring.html'
+  ];
+
+  for (const url of urls) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      const start = Date.now();
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      const status = response.status;
+      const rawText = await response.text();
+      const parsed = parsePpiResponse(rawText);
+      
+      debugInfo.attempts.push({
+        url,
+        status,
+        latencyMs: Date.now() - start,
+        rawLength: rawText ? rawText.length : 0,
+        rawSnippet: rawText ? rawText.substring(0, 300).replace(/\s+/g, ' ') : '',
+        parsed
+      });
+    } catch (err) {
+      debugInfo.attempts.push({
+        url,
+        error: err.message
+      });
+    }
+  }
+
+  res.json(debugInfo);
 });
 
 app.get('/api/setup-status', (req, res) => {
