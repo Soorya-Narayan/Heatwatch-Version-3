@@ -158,7 +158,7 @@ app.get('/api/setup-status', (req, res) => {
 });
 
 app.post('/api/setup', (req, res) => {
-  const { username, role, accessLevel, password, sensors } = req.body;
+  const { username, role, accessLevel, password, recoveryPin, sensors } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and Password are required' });
@@ -166,7 +166,7 @@ app.post('/api/setup', (req, res) => {
 
   SYSTEM_STATE = {
     isConfigured: true,
-    user: { username, role: role || 'Administrator', accessLevel: accessLevel || 'Full Access', password },
+    user: { username, role: role || 'Administrator', accessLevel: accessLevel || 'Full Access', password, recoveryPin: recoveryPin || '1234' },
     sensors: sensors && sensors.length === 8 ? sensors : DEFAULT_SENSORS
   };
 
@@ -198,6 +198,27 @@ app.post('/api/verify-password', (req, res) => {
   } else {
     return res.json({ success: false, error: 'Incorrect Password' });
   }
+});
+
+app.post('/api/reset-password-with-pin', (req, res) => {
+  const { pin, newPassword } = req.body;
+  if (!SYSTEM_STATE.user) {
+    return res.status(400).json({ success: false, error: 'System not configured' });
+  }
+
+  const currentPin = SYSTEM_STATE.user.recoveryPin || '1234';
+  if (pin !== currentPin) {
+    return res.json({ success: false, error: 'Incorrect Security Recovery PIN' });
+  }
+
+  if (!newPassword || newPassword.length < 1) {
+    return res.json({ success: false, error: 'Please enter a valid new password' });
+  }
+
+  SYSTEM_STATE.user.password = newPassword;
+  saveSetupState(SYSTEM_STATE);
+  console.log('[HeatWatch 3] Password updated successfully via Security PIN reset.');
+  res.json({ success: true });
 });
 
 app.get('/api/config', (req, res) => res.json(SYSTEM_STATE.sensors || DEFAULT_SENSORS));

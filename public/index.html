@@ -579,6 +579,10 @@
             <input type="password" id="wz-password-confirm" placeholder="••••••••">
           </div>
         </div>
+        <div class="form-group" style="margin-top: 2px;">
+          <label>4-Digit Recovery PIN (For Password Recovery)</label>
+          <input type="number" id="wz-pin" placeholder="e.g. 1234" value="1234" style="text-align: center; font-weight: 700; letter-spacing: 2px;">
+        </div>
       </div>
 
       <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; margin-top: 6px;">
@@ -802,12 +806,40 @@
 <!-- Password Modal -->
 <div class="modal-box" id="password-modal">
   <div class="modal-card">
-    <h3 style="font-family: var(--font-heading); font-size: 1.3rem;">Authentication Required</h3>
-    <p style="font-size: 0.85rem; color: var(--text-muted);">Please enter your administrator password to access protected settings.</p>
-    <input type="password" id="modal-password-input" placeholder="Enter password" style="text-align: center;">
-    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 6px;">
-      <button class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
-      <button class="btn" onclick="submitPasswordVerification()">Authenticate</button>
+    <!-- Auth View -->
+    <div id="modal-view-auth" style="display: flex; flex-direction: column; gap: 14px;">
+      <h3 style="font-family: var(--font-heading); font-size: 1.3rem;">Authentication Required</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Please enter your administrator password to access protected settings.</p>
+      <input type="password" id="modal-password-input" placeholder="Enter password" style="text-align: center;">
+      <div style="display: flex; justify-content: flex-end; margin-top: -6px;">
+        <button style="background: none; border: none; color: var(--accent-cyan); font-size: 0.78rem; font-weight: 600; cursor: pointer; text-decoration: underline;" onclick="showRecoveryModalView()">Forgot Password?</button>
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: center; margin-top: 4px;">
+        <button class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
+        <button class="btn" onclick="submitPasswordVerification()">Authenticate</button>
+      </div>
+    </div>
+
+    <!-- Recovery View -->
+    <div id="modal-view-recovery" style="display: none; flex-direction: column; gap: 12px;">
+      <h3 style="font-family: var(--font-heading); font-size: 1.3rem;">Password Recovery</h3>
+      <p style="font-size: 0.82rem; color: var(--text-muted);">Enter your 4-digit Security PIN and set a new administrator password.</p>
+      <div class="form-group" style="text-align: left;">
+        <label>Security Recovery PIN</label>
+        <input type="number" id="rec-pin-input" placeholder="4-Digit PIN" style="text-align: center; font-weight: 700; letter-spacing: 2px;">
+      </div>
+      <div class="form-group" style="text-align: left;">
+        <label>New Password</label>
+        <input type="password" id="rec-new-pass" placeholder="Enter new password">
+      </div>
+      <div class="form-group" style="text-align: left;">
+        <label>Confirm New Password</label>
+        <input type="password" id="rec-confirm-pass" placeholder="Confirm new password">
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: center; margin-top: 6px;">
+        <button class="btn btn-secondary" onclick="showAuthModalView()">Back</button>
+        <button class="btn" onclick="submitPasswordResetWithPin()">Reset & Authenticate</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1141,9 +1173,11 @@
     const user = document.getElementById('wz-username').value;
     const pass = document.getElementById('wz-password').value;
     const confirm = document.getElementById('wz-password-confirm').value;
+    const pin = document.getElementById('wz-pin').value;
 
     if (!user || !pass) return alert('Please enter both username and password!');
     if (pass !== confirm) return alert('Passwords do not match!');
+    if (!pin || pin.length < 4) return alert('Please enter a 4-digit Security Recovery PIN!');
 
     document.getElementById('sum-user').innerText = user;
     document.getElementById('sum-role').innerText = document.getElementById('wz-role').value;
@@ -1157,11 +1191,12 @@
     const role = document.getElementById('wz-role').value;
     const accessLevel = document.getElementById('wz-access').value;
     const password = document.getElementById('wz-password').value;
+    const recoveryPin = document.getElementById('wz-pin').value || '1234';
 
     const res = await fetch('/api/setup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, role, accessLevel, password, sensors: wizardSensors })
+      body: JSON.stringify({ username, role, accessLevel, password, recoveryPin, sensors: wizardSensors })
     });
 
     if (res.ok) {
@@ -1273,8 +1308,19 @@
     }
   }
 
+  function showRecoveryModalView() {
+    document.getElementById('modal-view-auth').style.display = 'none';
+    document.getElementById('modal-view-recovery').style.display = 'flex';
+  }
+
+  function showAuthModalView() {
+    document.getElementById('modal-view-recovery').style.display = 'none';
+    document.getElementById('modal-view-auth').style.display = 'flex';
+  }
+
   function closePasswordModal() {
     document.getElementById('password-modal').classList.remove('active');
+    showAuthModalView();
   }
 
   async function submitPasswordVerification() {
@@ -1293,6 +1339,33 @@
       if (targetProtectedView) selectView(targetProtectedView.viewId, targetProtectedView.btn);
     } else {
       alert('Incorrect Password!');
+    }
+  }
+
+  async function submitPasswordResetWithPin() {
+    const pin = document.getElementById('rec-pin-input').value;
+    const newPass = document.getElementById('rec-new-pass').value;
+    const confirmPass = document.getElementById('rec-confirm-pass').value;
+
+    if (!pin) return alert('Please enter your 4-digit Security Recovery PIN!');
+    if (!newPass) return alert('Please enter a new password!');
+    if (newPass !== confirmPass) return alert('New passwords do not match!');
+
+    const res = await fetch('/api/reset-password-with-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin, newPassword: newPass })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      alert('Password reset successfully!');
+      authenticatedPassword = newPass;
+      closePasswordModal();
+      renderProtectedSettingsForm();
+      if (targetProtectedView) selectView(targetProtectedView.viewId, targetProtectedView.btn);
+    } else {
+      alert(result.error || 'Password reset failed!');
     }
   }
 
