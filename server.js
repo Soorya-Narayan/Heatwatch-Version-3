@@ -87,23 +87,26 @@ function parsePpiResponse(text) {
   for (let i = 1; i <= 8; i++) {
     const chKey = `CH${i}`;
     
-    // Pattern A: XML tags <CH1>27.7</CH1>
-    let match = text.match(new RegExp(`<${chKey}>\\s*([^<]+?)\\s*</${chKey}>`, 'i'));
+    // Pattern A: XML tags <CH1>27.7</CH1> or <CH01>27.7</CH01>
+    let match = text.match(new RegExp(`<CH0?${i}>\\s*([^<]+?)\\s*</CH0?${i}>`, 'i'));
     
-    // Pattern B: HTML Table cells <td>CH1</td><td>27.7</td>
+    // Pattern B: HTML Table cells <td>CH1</td><td>27.7</td> or <td>CH01</td>
     if (!match) {
-      match = text.match(new RegExp(`${chKey}\\s*</t[dh]>\\s*<td[^>]*>\\s*([^<]+?)\\s*</td>`, 'i'));
+      match = text.match(new RegExp(`CH0?${i}\\s*</t[dh]>\\s*<td[^>]*>\\s*([^<]+?)\\s*</td>`, 'i'));
     }
 
-    // Pattern C: JSON / KV / Plain text "CH1": 27.7 or CH1 27.7
+    // Pattern C: JSON / KV / Plain text "CH1": 27.7 or CH1 27.7 or CH01: 27.7
     if (!match) {
-      match = text.match(new RegExp(`${chKey}["'\\s:=]*?(-?\\d+(?:\\.\\d+)?)`, 'i'));
+      match = text.match(new RegExp(`CH0?${i}["'\\s:=]*?(-?\\d+(?:\\.\\d+)?)`, 'i'));
     }
 
     if (match) {
-      const num = parseFloat(match[1].trim());
+      const valStr = match[1].trim();
+      const num = parseFloat(valStr);
       if (!isNaN(num)) {
         readings[chKey] = num;
+      } else if (valStr.toUpperCase().includes('OPEN') || valStr.toUpperCase().includes('ERR')) {
+        readings[chKey] = 'OPEN';
       }
     }
   }
@@ -123,7 +126,7 @@ async function fetchPpiHardwareDirect() {
   for (const url of urls) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 1500);
+      const timeout = setTimeout(() => controller.abort(), 3000);
       const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timeout);
 
@@ -372,32 +375,33 @@ async function broadcastTelemetry() {
   const currentSensors = SYSTEM_STATE.sensors || DEFAULT_SENSORS;
   let latestReadings = {};
 
-  try {
-    const q = `from(bucket: "${INFLUX_BUCKET}")
-      |> range(start: -30s)
-      |> filter(fn: (r) => r._measurement == "temperature")
-      |> last()`;
-    const rows = await queryApi.collectRows(q);
+  // First priority: Fetch live hardware directly from PPI AIME 8U HTTP API
+  const directReadings = await fetchPpiHardwareDirect();
+  if (directReadings && Object.keys(directReadings).length > 0) {
+    latestReadings = directReadings;
+  } else {
+    // Second priority: Fallback to last recorded points in InfluxDB
+    try {
+      const q = `from(bucket: "${INFLUX_BUCKET}")
+        |> range(start: -5m)
+        |> filter(fn: (r) => r._measurement == "temperature")
+        |> last()`;
+      const rows = await queryApi.collectRows(q);
 
-    if (rows && rows.length > 0) {
-      rows.forEach(r => {
-        const ch = r.channel || r._field;
-        if (ch) latestReadings[ch] = r._value;
-      });
-    }
-  } catch (e) {}
-
-  if (Object.keys(latestReadings).length === 0) {
-    const directReadings = await fetchPpiHardwareDirect();
-    if (directReadings) {
-      latestReadings = directReadings;
-    }
+      if (rows && rows.length > 0) {
+        rows.forEach(r => {
+          const ch = r.channel || r._field;
+          if (ch) latestReadings[ch] = r._value;
+        });
+      }
+    } catch (e) {}
   }
 
   const packet = currentSensors.map(s => {
     const rawVal = latestReadings[s.id];
     const numVal = parseFloat(rawVal);
-    const isOffline = rawVal === undefined || rawVal === null || isNaN(numVal) || numVal === 0 || numVal >= 999 || numVal <= -999;
+    const isOpenFault = rawVal === 'OPEN' || rawVal === 'ERR' || numVal >= 999 || numVal <= -999;
+    const isOffline = rawVal === undefined || rawVal === null || isNaN(numVal) || isOpenFault;
 
     return {
       id: s.id,

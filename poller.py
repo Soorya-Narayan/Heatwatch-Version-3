@@ -44,16 +44,16 @@ def poll_aime_hardware():
                 for i in range(1, 9):
                     ch_key = f"CH{i}"
                     
-                    # Pattern A: XML tags <CH1>27.7</CH1>
-                    match = re.search(rf'<{ch_key}>\s*([^<]+?)\s*</{ch_key}>', text, re.IGNORECASE)
+                    # Pattern A: XML tags <CH1>27.7</CH1> or <CH01>27.7</CH01>
+                    match = re.search(rf'<CH0?{i}>\s*([^<]+?)\s*</CH0?{i}>', text, re.IGNORECASE)
                     
-                    # Pattern B: HTML Table cells <td>CH1</td><td>27.7</td>
+                    # Pattern B: HTML Table cells <td>CH1</td><td>27.7</td> or <td>CH01</td>
                     if not match:
-                        match = re.search(rf'{ch_key}\s*</t[dh]>\s*<td[^>]*>\s*([^<]+?)\s*</td>', text, re.IGNORECASE)
+                        match = re.search(rf'CH0?{i}\s*</t[dh]>\s*<td[^>]*>\s*([^<]+?)\s*</td>', text, re.IGNORECASE)
 
-                    # Pattern C: KV / JSON / Plain text "CH1": 27.7 or CH1 27.7
+                    # Pattern C: JSON / KV / Plain text "CH1": 27.7 or CH1 27.7 or CH01: 27.7
                     if not match:
-                        match = re.search(rf'{ch_key}["\'\s:=]*?(-?\d+(?:\.\d+)?)', text, re.IGNORECASE)
+                        match = re.search(rf'CH0?{i}["\'\s:=]*?(-?\d+(?:\.\d+)?)', text, re.IGNORECASE)
 
                     if match:
                         try:
