@@ -116,6 +116,10 @@
     transition: opacity 0.5s ease;
   }
 
+  :root.light-mode #wizard-container {
+    background: #f1f5f9;
+  }
+
   .wizard-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -123,13 +127,19 @@
     box-shadow: var(--shadow-main);
     width: 94%;
     max-width: 740px;
-    padding: 20px 28px;
+    padding: 24px 32px;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     gap: 12px;
     animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  :root.light-mode .wizard-card {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
   }
 
   @keyframes fade-in-up {
@@ -139,7 +149,7 @@
 
   .wizard-title {
     font-family: var(--font-heading);
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 800;
     letter-spacing: -0.5px;
     background: linear-gradient(135deg, var(--text-main) 30%, var(--accent-cyan));
@@ -147,34 +157,67 @@
     -webkit-text-fill-color: transparent;
   }
 
-  .wizard-subtitle {
-    font-size: 0.82rem;
-    color: var(--text-muted);
-    max-width: 520px;
-    line-height: 1.35;
+  :root.light-mode .wizard-title {
+    background: linear-gradient(135deg, #0f172a 30%, #2563eb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  .wizard-progress { display: flex; gap: 8px; margin-bottom: 2px; }
-  .wizard-dot { width: 32px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); transition: background 0.3s ease; }
-  .wizard-dot.active { background: var(--accent-blue); box-shadow: 0 0 8px var(--accent-blue); }
+  .wizard-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    max-width: 540px;
+    line-height: 1.4;
+  }
+
+  :root.light-mode .wizard-subtitle {
+    color: #475569;
+  }
+
+  .wizard-progress { display: flex; gap: 8px; margin-bottom: 4px; }
+  .wizard-dot { width: 36px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); transition: all 0.3s ease; }
+  :root.light-mode .wizard-dot { background: #cbd5e1; }
+  .wizard-dot.active { background: var(--accent-blue); box-shadow: 0 0 10px var(--accent-blue); }
+  :root.light-mode .wizard-dot.active { background: #2563eb; box-shadow: 0 0 10px rgba(37, 99, 235, 0.3); }
+
+  .wizard-panel-box {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  :root.light-mode .wizard-panel-box {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
 
   .form-grid { width: 100%; display: flex; flex-direction: column; gap: 10px; text-align: left; }
   .form-group { display: flex; flex-direction: column; gap: 4px; }
-  .form-group label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  :root.light-mode .form-group label { color: #334155; }
 
   input, select {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--border-color);
     color: var(--text-main);
-    padding: 7px 10px;
-    border-radius: 7px;
-    font-size: 0.85rem;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.88rem;
     outline: none;
-    transition: border-color 0.2s ease;
+    transition: all 0.2s ease;
   }
 
   :root.light-mode input, :root.light-mode select {
-    background: rgba(255, 255, 255, 0.8);
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #0f172a;
+  }
+
+  :root.light-mode input:focus, :root.light-mode select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
   }
 
   input:focus, select:focus { border-color: var(--accent-blue); }
@@ -196,7 +239,9 @@
   }
 
   :root.light-mode .sensor-config-table th {
-    background: rgba(0, 0, 0, 0.05);
+    background: #f1f5f9;
+    color: #334155;
+    border-bottom-color: #cbd5e1;
   }
 
   .sensor-config-table td {
@@ -204,11 +249,26 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   }
 
+  :root.light-mode .sensor-config-table td {
+    border-bottom-color: #e2e8f0;
+  }
+
   .sensor-config-table input {
     padding: 4px 6px;
     font-size: 0.8rem;
     height: 28px;
     width: 100%;
+  }
+
+  :root.light-mode .sensor-config-table input {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #0f172a;
+  }
+
+  :root.light-mode .sensor-config-table input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
   }
 
   .btn {
@@ -620,7 +680,7 @@
     <div id="wizard-step-1" style="display: flex; flex-direction: column; align-items: center; gap: 14px;">
       <h2 class="wizard-title">Welcome to HeatWatch</h2>
       <p class="wizard-subtitle">Next-generation industrial telemetry platform by Goose Industrial Solutions. Let's configure your system credentials and RTD sensors.</p>
-      <button class="btn" style="margin-top: 10px;" onclick="goToWizardStep(2)">Get Started →</button>
+      <button class="btn" style="margin-top: 10px;" onclick="goToWizardStep(2)">Get Started</button>
     </div>
 
     <!-- Step 2: Credentials -->
@@ -668,7 +728,7 @@
 
       <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; margin-top: 6px;">
         <button class="btn btn-secondary" onclick="goToWizardStep(1)">Back</button>
-        <button class="btn" onclick="validateStep2()">Next: RTD Sensors →</button>
+        <button class="btn" onclick="validateStep2()">Next: RTD Sensors</button>
       </div>
     </div>
 
@@ -677,7 +737,7 @@
       <h2 class="wizard-title">Configure All 8 RTD Sensors</h2>
       <p class="wizard-subtitle">Set channel labels and threshold limits (LoLo, Lo, Hi, HiHi) for all 8 channels.</p>
 
-      <div style="width: 100%; overflow: hidden; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 10px; padding: 4px 6px;">
+      <div class="wizard-panel-box" style="overflow: hidden; padding: 4px 6px;">
         <table class="sensor-config-table">
           <thead>
             <tr>
@@ -695,7 +755,7 @@
 
       <div style="display: flex; gap: 12px; width: 100%; justify-content: flex-end; margin-top: 4px;">
         <button class="btn btn-secondary" onclick="goToWizardStep(2)">Back</button>
-        <button class="btn" onclick="wizardStep3Next()">Next: Review →</button>
+        <button class="btn" onclick="wizardStep3Next()">Next: Review</button>
       </div>
     </div>
 
@@ -704,7 +764,7 @@
       <h2 class="wizard-title">Review & Complete Setup</h2>
       <p class="wizard-subtitle">Verify your configuration details before launching the HeatWatch telemetry system.</p>
 
-      <div class="form-grid" style="background: rgba(0,0,0,0.25); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+      <div class="form-grid wizard-panel-box" style="padding: 16px;">
         <div><strong>Administrator:</strong> <span id="sum-user">--</span> (<span id="sum-role">--</span>)</div>
         <div><strong>Access Level:</strong> <span id="sum-access">--</span></div>
         <div><strong>RTD Sensors Configured:</strong> 8 Channels (PPI AIME 8U)</div>
