@@ -650,6 +650,12 @@
     </div>
 
     <div class="nav-right">
+      <!-- PPI Hardware Connection Badge -->
+      <div id="ppi-badge" title="PPI AIME 8U Hardware Status" style="display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); font-size:0.72rem; font-weight:600; letter-spacing:0.5px; color:var(--text-muted); cursor:default; transition:all 0.3s;">
+        <span id="ppi-dot" style="width:7px; height:7px; border-radius:50%; background:#4a5568; display:inline-block; transition:background 0.3s;"></span>
+        <span id="ppi-label">PPI</span>
+      </div>
+
       <!-- Theme Toggle Button -->
       <button class="icon-nav-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="theme-icon-sun" style="display: none;">
@@ -681,6 +687,17 @@
   <main class="view-container">
     <section id="view-live" class="view-panel active">
       <div class="telemetry-grid" id="main-sensor-grid"></div>
+
+      <!-- 24h Min / Max / Avg Summary -->
+      <div class="chart-card" id="stats-summary-card" style="margin-top: 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h3 style="font-size:0.9rem; margin:0;">📊 24-Hour Channel Summary</h3>
+          <button class="btn btn-secondary" style="padding:3px 10px; font-size:0.75rem;" onclick="fetchChannelStats()">Refresh</button>
+        </div>
+        <div id="stats-summary-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+          <div style="text-align:center; color:var(--text-dim); font-size:0.8rem; padding:12px; grid-column:1/-1;">Loading 24h statistics...</div>
+        </div>
+      </div>
     </section>
 
     <section id="view-trends" class="view-panel">
@@ -791,6 +808,18 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h3>Settings & Data Management (Admin Protected)</h3>
           <button class="btn" onclick="saveAdminSettings()">Save All Changes</button>
+        </div>
+        <!-- Display Preferences (no password needed) -->
+        <div style="padding: 12px 0; border-bottom: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong>Hide Offline Channels</strong>
+            <p style="font-size:0.78rem; color:var(--text-dim); margin-top:2px;">Channels with no connected probe are hidden from the live view.</p>
+          </div>
+          <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;">
+            <input type="checkbox" id="toggle-hide-offline" style="opacity:0; width:0; height:0; position:absolute;" onchange="setHideOffline(this.checked)">
+            <span id="hide-offline-track" style="position:absolute; inset:0; border-radius:24px; background:#2d3748; transition:background 0.3s;"></span>
+            <span id="hide-offline-thumb" style="position:absolute; left:3px; top:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:left 0.3s;"></span>
+          </label>
         </div>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; overflow-y: auto; margin-top: 12px;" id="protected-settings-grid"></div>
         <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -1034,6 +1063,7 @@
     } catch(e) {}
 
     initWebSocket();
+    setTimeout(() => { fetchChannelStats(); syncHideOfflineToggle(); }, 1000);
 
     setTimeout(() => {
       dismissAppleBootScreen();
@@ -1240,6 +1270,97 @@
   }
 
   let latestTelemetryPacket = [];
+  let lastWsTime = null;
+  let hideOfflineChannels = localStorage.getItem('hideOfflineChannels') === 'true';
+
+  // Initialise hide-offline toggle state when settings panel is opened
+  function syncHideOfflineToggle() {
+    const chk = document.getElementById('toggle-hide-offline');
+    const track = document.getElementById('hide-offline-track');
+    const thumb = document.getElementById('hide-offline-thumb');
+    if (!chk) return;
+    chk.checked = hideOfflineChannels;
+    track.style.background = hideOfflineChannels ? 'var(--accent-green)' : '#2d3748';
+    thumb.style.left = hideOfflineChannels ? '23px' : '3px';
+  }
+
+  function setHideOffline(val) {
+    hideOfflineChannels = val;
+    localStorage.setItem('hideOfflineChannels', val);
+    syncHideOfflineToggle();
+    if (latestTelemetryPacket.length) renderMainTelemetryGrid(latestTelemetryPacket);
+  }
+
+  // "Last updated X sec ago" ticker — runs every second
+  setInterval(() => {
+    if (!lastWsTime) return;
+    const secs = Math.round((Date.now() - lastWsTime) / 1000);
+    const label = secs <= 1 ? 'Just now' : secs < 60 ? `${secs}s ago` : `${Math.floor(secs/60)}m ago`;
+    document.querySelectorAll('.card-last-updated').forEach(el => el.textContent = label);
+  }, 1000);
+
+  function updatePpiBadge(connected) {
+    const dot = document.getElementById('ppi-dot');
+    const lbl = document.getElementById('ppi-label');
+    if (!dot || !lbl) return;
+    if (connected) {
+      dot.style.background = '#10b981';
+      dot.style.boxShadow = '0 0 6px rgba(16,185,129,0.8)';
+      lbl.textContent = 'PPI Connected';
+      lbl.style.color = '#10b981';
+    } else {
+      dot.style.background = '#ef4444';
+      dot.style.boxShadow = '0 0 6px rgba(239,68,68,0.7)';
+      lbl.textContent = 'PPI Offline';
+      lbl.style.color = '#ef4444';
+    }
+  }
+
+  async function fetchChannelStats() {
+    const grid = document.getElementById('stats-summary-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div style="text-align:center; color:var(--text-dim); font-size:0.8rem; padding:12px; grid-column:1/-1;">Loading...</div>';
+    try {
+      const res = await fetch('/api/stats');
+      const r = await res.json();
+      const stats = (r.ok && r.stats) ? r.stats : [];
+      const connected = stats.filter(s => s.min !== null);
+
+      if (connected.length === 0) {
+        grid.innerHTML = '<div style="text-align:center; color:var(--text-dim); font-size:0.8rem; padding:12px; grid-column:1/-1;">No data yet — stats appear after 24h of logging.</div>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      stats.forEach(s => {
+        const hasData = s.min !== null;
+        const card = document.createElement('div');
+        card.style.cssText = 'background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:10px; padding:10px 12px; min-width:0;';
+        card.innerHTML = `
+          <div style="font-size:0.7rem; color:var(--text-dim); font-weight:600; letter-spacing:0.5px;">${s.id}</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.label}</div>
+          ${hasData ? `
+          <div style="display:flex; justify-content:space-between; gap:6px; font-size:0.8rem;">
+            <div style="text-align:center; flex:1;">
+              <div style="color:#3b82f6; font-weight:700;">${s.min}°</div>
+              <div style="font-size:0.65rem; color:var(--text-dim);">MIN</div>
+            </div>
+            <div style="text-align:center; flex:1;">
+              <div style="color:#10b981; font-weight:700;">${s.mean}°</div>
+              <div style="font-size:0.65rem; color:var(--text-dim);">AVG</div>
+            </div>
+            <div style="text-align:center; flex:1;">
+              <div style="color:#ef4444; font-weight:700;">${s.max}°</div>
+              <div style="font-size:0.65rem; color:var(--text-dim);">MAX</div>
+            </div>
+          </div>` : `<div style="font-size:0.75rem; color:var(--text-dim); text-align:center; padding:4px 0;">OFFLINE</div>`}
+        `;
+        grid.appendChild(card);
+      });
+    } catch(e) {
+      grid.innerHTML = '<div style="color:var(--text-dim); font-size:0.8rem; padding:12px; grid-column:1/-1; text-align:center;">Stats unavailable</div>';
+    }
+  }
 
   function initWebSocket() {
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1249,12 +1370,15 @@
       const msg = JSON.parse(event.data);
       if (msg.type === 'telemetry') {
         latestTelemetryPacket = msg.sensors || [];
+        lastWsTime = Date.now();
+        updatePpiBadge(!!msg.ppiConnected);
         renderMainTelemetryGrid(msg.sensors);
         appendLiveTrendPoint(msg.time, msg.sensors);
       }
     };
 
     ws.onclose = () => {
+      updatePpiBadge(false);
       setTimeout(initWebSocket, 2000);
     };
 
@@ -1262,6 +1386,7 @@
       ws.close();
     };
   }
+
 
   function appendLiveTrendPoint(timeStr, sensors) {
     if (!trendsChart || !trendsChart.data || !trendsChart.data.datasets) return;
@@ -1288,8 +1413,13 @@
     const grid = document.getElementById('main-sensor-grid');
     grid.innerHTML = '';
 
+    const secs = lastWsTime ? Math.round((Date.now() - lastWsTime) / 1000) : null;
+    const updatedLabel = !secs ? 'Just now' : secs < 60 ? `${secs}s ago` : `${Math.floor(secs/60)}m ago`;
+
     sensors.forEach(s => {
       const isOffline = s.offline || s.val === '--';
+      if (hideOfflineChannels && isOffline) return;
+
       const valStr = isOffline ? '--' : s.val;
       const valNum = isOffline ? 0 : parseFloat(s.val);
       
@@ -1331,10 +1461,12 @@
           <div class="threshold-bar-track"><div class="threshold-bar-fill" style="width: ${pct}%; background: ${barColor};"></div></div>
           <div class="card-meta"><span>Lo: ${s.lo}° | Hi: ${s.hi}°</span><span>HiHi: ${s.hihi}°C</span></div>
         </div>
+        <div style="margin-top:6px; text-align:right; font-size:0.68rem; color:var(--text-dim);" class="card-last-updated">${updatedLabel}</div>
       `;
       grid.appendChild(card);
     });
   }
+
 
   function toggleDrawer(open) {
     document.getElementById('nav-drawer').classList.toggle('active', open);

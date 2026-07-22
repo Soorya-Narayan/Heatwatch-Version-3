@@ -433,7 +433,52 @@ app.post('/api/delete', async (req, res) => {
   }
 });
 
-// -------------------------------------------------------------
+app.get('/api/stats', async (req, res) => {
+  const sensors = SYSTEM_STATE.sensors || DEFAULT_SENSORS;
+  const result = {};
+
+  try {
+    // Query min, max, mean for each channel over last 24h
+    const q = `
+      import "math"
+      data = from(bucket: "${INFLUX_BUCKET}")
+        |> range(start: -24h)
+        |> filter(fn: (r) => r._measurement == "temperature" and r._field == "value")
+
+      min_data = data |> min() |> map(fn: (r) => ({r with stat: "min"}))
+      max_data = data |> max() |> map(fn: (r) => ({r with stat: "max"}))
+      mean_data = data |> mean() |> map(fn: (r) => ({r with stat: "mean"}))
+
+      union(tables: [min_data, max_data, mean_data])
+    `;
+
+    const rows = await queryApi.collectRows(q);
+    rows.forEach(r => {
+      const ch = r.channel || r._field;
+      if (!ch) return;
+      if (!result[ch]) result[ch] = { min: null, max: null, mean: null };
+      const stat = r.stat;
+      if (stat && result[ch][stat] === null) {
+        result[ch][stat] = parseFloat(r._value.toFixed(1));
+      }
+    });
+  } catch (e) {
+    // If InfluxDB empty or error, return nulls with no crash
+  }
+
+  // Merge with sensor config so all 8 channels are always present
+  const statsOut = sensors.map(s => ({
+    id: s.id,
+    label: s.label,
+    min: result[s.id]?.min ?? null,
+    max: result[s.id]?.max ?? null,
+    mean: result[s.id]?.mean ?? null
+  }));
+
+  res.json({ ok: true, stats: statsOut });
+});
+
+
 // Live Telemetry Broadcaster
 // -------------------------------------------------------------
 async function broadcastTelemetry() {
@@ -481,7 +526,8 @@ async function broadcastTelemetry() {
     };
   });
 
-  const payload = JSON.stringify({ type: 'telemetry', time: now, sensors: packet });
+  const ppiConnected = !!(directReadings && Object.keys(directReadings).length > 0);
+  const payload = JSON.stringify({ type: 'telemetry', time: now, sensors: packet, ppiConnected });
 
   wss.clients.forEach(client => {
     if (client.readyState === 1) client.send(payload);
