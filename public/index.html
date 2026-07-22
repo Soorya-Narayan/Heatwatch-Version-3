@@ -1336,6 +1336,8 @@
       }, 60);
     } else if (viewId === 'usage') {
       fetchUsageStats();
+    } else if (viewId === 'history') {
+      fetchHistory();
     }
   }
 
@@ -1797,39 +1799,177 @@
     doc.save(`HeatWatch3_Trends_Report_${new Date().toISOString().slice(0,10)}.pdf`);
   }
 
+  function populateHistorySensorDropdown() {
+    const select = document.getElementById('hist-sensor');
+    if (!select || select.children.length > 1) return;
+    select.innerHTML = '<option value="all">All Channels (CH1 - CH8)</option>';
+    wizardSensors.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.innerText = `${s.id} — ${s.label}`;
+      select.appendChild(opt);
+    });
+  }
+
   async function fetchHistory() {
+    populateHistorySensorDropdown();
     const sensor = document.getElementById('hist-sensor').value;
     const range = document.getElementById('hist-range').value;
-    const res = await fetch(`/api/history?range=${range}&sensor=${sensor}`);
-    const r = await res.json();
-    historyData = r.data || [];
+    
     const tbody = document.getElementById('history-rows');
+    tbody.innerHTML = '<tr><td colspan="4" style="padding: 20px; text-align: center; color: var(--text-dim);">Loading telemetry logs...</td></tr>';
+
+    try {
+      const res = await fetch(`/api/history?range=${range}&sensor=${sensor}`);
+      const r = await res.json();
+      historyData = (r.ok && r.data) ? r.data : [];
+    } catch(e) {
+      historyData = [];
+    }
+
+    if (historyData.length === 0) {
+      const nowIso = new Date().toISOString();
+      wizardSensors.forEach(s => {
+        if (sensor !== 'all' && sensor !== s.id) return;
+        const liveSensor = latestTelemetryPacket.find(p => p.id === s.id);
+        const val = liveSensor ? (liveSensor.offline || liveSensor.val === '--' ? null : parseFloat(liveSensor.val)) : (s.offline || s.val === '--' ? null : parseFloat(s.val));
+        if (val !== null) {
+          historyData.push({ time: nowIso, channel: s.id, value: val });
+        }
+      });
+    }
+
     tbody.innerHTML = '';
-    historyData.slice(0, 150).forEach(item => {
+    if (historyData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="padding: 20px; text-align: center; color: var(--text-dim);">No telemetry log records found for selected time range.</td></tr>';
+      return;
+    }
+
+    historyData.slice(-200).reverse().forEach(item => {
+      const s = wizardSensors.find(x => x.id === item.channel) || { label: item.channel, hihi: 80, hi: 60, lo: 10, lolo: 5 };
+      const valNum = parseFloat(item.value);
+      const isOff = isNaN(valNum) || valNum === 0 || valNum >= 999 || valNum <= -999;
+      
+      let statusClass = 'status-normal', statusText = 'NORMAL';
+      if (isOff) {
+        statusClass = 'status-offline'; statusText = 'OFFLINE';
+      } else if (valNum >= s.hihi) {
+        statusClass = 'status-alarm'; statusText = 'HIHI ALARM';
+      } else if (valNum <= s.lolo) {
+        statusClass = 'status-alarm'; statusText = 'LOLO ALARM';
+      } else if (valNum >= s.hi) {
+        statusClass = 'status-warning'; statusText = 'WARNING HI';
+      } else if (valNum <= s.lo) {
+        statusClass = 'status-warning'; statusText = 'WARNING LO';
+      }
+
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="padding:10px;">${new Date(item.time).toLocaleString()}</td><td style="padding:10px;">${item.channel}</td><td style="padding:10px;">${item.value.toFixed(1)} °C</td><td style="padding:10px;"><span class="alarm-status-pill status-normal"><span class="status-dot-indicator"></span>NORMAL</span></td>`;
+      tr.style.borderBottom = '1px solid var(--border-color)';
+      tr.style.fontSize = '0.85rem';
+
+      const timeStr = new Date(item.time).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const chDisplay = `${item.channel} (${s.label})`;
+      const tempDisplay = isOff ? '--' : `${valNum.toFixed(1)} °C`;
+
+      tr.innerHTML = `
+        <td style="padding: 10px; font-family: monospace; color: var(--text-muted);">${timeStr}</td>
+        <td style="padding: 10px; font-weight: 600; color: var(--text-main);">${chDisplay}</td>
+        <td style="padding: 10px; font-weight: 700; color: var(--accent-blue);">${tempDisplay}</td>
+        <td style="padding: 10px;">
+          <span class="alarm-status-pill ${statusClass}">
+            <span class="status-dot-indicator"></span>${statusText}
+          </span>
+        </td>
+      `;
       tbody.appendChild(tr);
     });
   }
 
-  function exportData(type) {
+  async function exportData(type) {
     if (historyData.length === 0) return alert('Please query logs first!');
+
     if (type === 'csv') {
-      let csv = 'Timestamp,Channel,Temperature\n';
-      historyData.forEach(r => csv += `"${r.time}","${r.channel}",${r.value}\n`);
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'HeatWatch_History.csv'; a.click();
+      let csv = 'Timestamp,Channel,Temperature_C\n';
+      historyData.forEach(r => {
+        csv += `"${new Date(r.time).toLocaleString()}","${r.channel}",${r.value.toFixed(1)}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'HeatWatch_Telemetry_History.csv'; a.click();
     } else if (type === 'excel') {
-      const ws = XLSX.utils.json_to_sheet(historyData);
+      const rows = historyData.map(r => ({
+        Timestamp: new Date(r.time).toLocaleString(),
+        Channel: r.channel,
+        Temperature_C: r.value.toFixed(1)
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Logs');
-      XLSX.writeFile(wb, 'HeatWatch_Telemetry_Report.xlsx');
+      XLSX.utils.book_append_sheet(wb, ws, 'History Logs');
+      XLSX.writeFile(wb, 'HeatWatch_Telemetry_Logs.xlsx');
     } else if (type === 'pdf') {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.text('HeatWatch 3 — Telemetry Report', 14, 15);
-      doc.autoTable({ head: [['Timestamp', 'Channel', 'Value (°C)']], body: historyData.slice(0, 100).map(r => [new Date(r.time).toLocaleString(), r.channel, r.value.toFixed(1)]) });
-      doc.save('HeatWatch_Report.pdf');
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      const logoBase64 = await getGooseLogoBase64();
+      if (logoBase64) {
+        doc.addImage(logoBase64, 'PNG', 14, 8, 42, 16);
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(15);
+      doc.setTextColor(15, 23, 42);
+      doc.text('HeatWatch 3 — Telemetry Log History', logoBase64 ? 60 : 14, 16);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Generated: ${new Date().toLocaleString()} | Total Logs: ${historyData.length}`, logoBase64 ? 60 : 14, 22);
+
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.5);
+      doc.line(14, 27, pageWidth - 14, 27);
+
+      const tableHead = [['Timestamp', 'Channel', 'Temperature', 'Status']];
+      const tableBody = historyData.slice(-300).reverse().map(r => {
+        const s = wizardSensors.find(x => x.id === r.channel);
+        const labelStr = s ? `${r.channel} (${s.label})` : r.channel;
+        const valNum = parseFloat(r.value);
+        const isOff = isNaN(valNum) || valNum === 0 || valNum >= 999 || valNum <= -999;
+        let statusStr = 'NORMAL';
+        if (isOff) statusStr = 'OFFLINE';
+        else if (s && valNum >= s.hihi) statusStr = 'HIHI ALARM';
+        else if (s && valNum <= s.lolo) statusStr = 'LOLO ALARM';
+        else if (s && valNum >= s.hi) statusStr = 'WARNING HI';
+        else if (s && valNum <= s.lo) statusStr = 'WARNING LO';
+
+        return [
+          new Date(r.time).toLocaleString(),
+          labelStr,
+          isOff ? '--' : `${valNum.toFixed(1)} °C`,
+          statusStr
+        ];
+      });
+
+      doc.autoTable({
+        startY: 30,
+        head: tableHead,
+        body: tableBody,
+        theme: 'striped',
+        headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
+        styles: { fontSize: 8.5, cellPadding: 2.2 }
+      });
+
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184);
+        doc.text('HeatWatch 3 Industrial Temperature Monitoring System — Goose', 14, pageHeight - 8);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - 28, pageHeight - 8);
+      }
+
+      doc.save(`HeatWatch3_Telemetry_History_${new Date().toISOString().slice(0,10)}.pdf`);
     }
   }
 
