@@ -353,10 +353,10 @@ app.get('/api/system', (req, res) => {
 
 app.get('/api/history', async (req, res) => {
   const { range = '1h', sensor = 'all' } = req.query;
-  let rangeStart = '-1h', windowSize = '10s';
-  if (range === '6h') { rangeStart = '-6h'; windowSize = '1m'; }
-  else if (range === '24h') { rangeStart = '-24h'; windowSize = '5m'; }
-  else if (range === '7d') { rangeStart = '-7d'; windowSize = '30m'; }
+  let rangeStart = '-1h';
+  if (range === '6h') rangeStart = '-6h';
+  else if (range === '24h') rangeStart = '-24h';
+  else if (range === '7d') rangeStart = '-7d';
 
   let filterSensor = '';
   if (sensor !== 'all') {
@@ -365,10 +365,10 @@ app.get('/api/history', async (req, res) => {
 
   const q = `from(bucket: "${INFLUX_BUCKET}")
     |> range(start: ${rangeStart})
-    |> filter(fn: (r) => r._measurement == "temperature" and r._field == "value")
+    |> filter(fn: (r) => r._measurement == "temperature")
+    |> filter(fn: (r) => r._field == "value" or r._field == "CH1" or r._field == "CH2" or r._field == "CH3" or r._field == "CH4" or r._field == "CH5" or r._field == "CH6" or r._field == "CH7" or r._field == "CH8")
     ${filterSensor}
-    |> aggregateWindow(every: ${windowSize}, fn: mean, createEmpty: false)
-    |> yield(name: "mean")`;
+    |> limit(n: 1000)`;
 
   try {
     const rows = await queryApi.collectRows(q);
