@@ -84,18 +84,38 @@ function parsePpiResponse(text) {
   const readings = {};
   if (!text) return readings;
 
+  // 1. PPI Ethernet Module Native XML Schema (<chan><number>1</number><processValue>25.9</processValue>...</chan>)
+  if (text.includes('<channelData>') || text.includes('<chan>')) {
+    const chanBlocks = text.split(/<\/chan>/i);
+    chanBlocks.forEach(block => {
+      const numMatch = block.match(/<number>\s*(\d+)\s*<\/number>/i) || block.match(/<chanName>\s*CH?0*(\d+)\s*<\/chanName>/i);
+      const valMatch = block.match(/<processValue>\s*([^<]+?)\s*<\/processValue>/i);
+
+      if (numMatch && valMatch) {
+        const chNum = parseInt(numMatch[1], 10);
+        const valStr = valMatch[1].trim();
+        const num = parseFloat(valStr);
+        if (chNum >= 1 && chNum <= 8) {
+          const chKey = `CH${chNum}`;
+          if (!isNaN(num)) {
+            readings[chKey] = num;
+          } else if (valStr.toUpperCase().includes('OPEN') || valStr.toUpperCase().includes('ERR')) {
+            readings[chKey] = 'OPEN';
+          }
+        }
+      }
+    });
+
+    if (Object.keys(readings).length > 0) return readings;
+  }
+
+  // 2. Direct Tag / Cell Parser Fallback
   for (let i = 1; i <= 8; i++) {
     const chKey = `CH${i}`;
-    
-    // Pattern A: XML tags <CH1>27.7</CH1> or <CH01>27.7</CH01>
     let match = text.match(new RegExp(`<CH0?${i}>\\s*([^<]+?)\\s*</CH0?${i}>`, 'i'));
-    
-    // Pattern B: HTML Table cells <td>CH1</td><td>27.7</td> or <td>CH01</td>
     if (!match) {
       match = text.match(new RegExp(`CH0?${i}\\s*</t[dh]>\\s*<td[^>]*>\\s*([^<]+?)\\s*</td>`, 'i'));
     }
-
-    // Pattern C: JSON / KV / Plain text "CH1": 27.7 or CH1 27.7 or CH01: 27.7
     if (!match) {
       match = text.match(new RegExp(`CH0?${i}["'\\s:=]*?(-?\\d+(?:\\.\\d+)?)`, 'i'));
     }
@@ -105,8 +125,6 @@ function parsePpiResponse(text) {
       const num = parseFloat(valStr);
       if (!isNaN(num)) {
         readings[chKey] = num;
-      } else if (valStr.toUpperCase().includes('OPEN') || valStr.toUpperCase().includes('ERR')) {
-        readings[chKey] = 'OPEN';
       }
     }
   }

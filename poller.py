@@ -41,17 +41,33 @@ def poll_aime_hardware():
                 text = resp.text
                 channels = {}
 
+                # 1. Native PPI Ethernet Module XML Schema (<chan><number>1</number><processValue>25.9</processValue>...</chan>)
+                if "<channelData>" in text or "<chan>" in text:
+                    chan_blocks = re.split(r'</chan>', text, flags=re.IGNORECASE)
+                    for block in chan_blocks:
+                        num_match = re.search(r'<number>\s*(\d+)\s*</number>', block, re.IGNORECASE) or \
+                                    re.search(r'<chanName>\s*CH?0*(\d+)\s*</chanName>', block, re.IGNORECASE)
+                        val_match = re.search(r'<processValue>\s*([^<]+?)\s*</processValue>', block, re.IGNORECASE)
+
+                        if num_match and val_match:
+                            try:
+                                ch_num = int(num_match.group(1))
+                                val_str = val_match.group(1).strip()
+                                if 1 <= ch_num <= 8:
+                                    val = float(val_str)
+                                    channels[f"CH{ch_num}"] = val
+                            except ValueError:
+                                pass
+
+                    if channels:
+                        return channels
+
+                # 2. Fallback Tag/Cell Parser
                 for i in range(1, 9):
                     ch_key = f"CH{i}"
-                    
-                    # Pattern A: XML tags <CH1>27.7</CH1> or <CH01>27.7</CH01>
                     match = re.search(rf'<CH0?{i}>\s*([^<]+?)\s*</CH0?{i}>', text, re.IGNORECASE)
-                    
-                    # Pattern B: HTML Table cells <td>CH1</td><td>27.7</td> or <td>CH01</td>
                     if not match:
                         match = re.search(rf'CH0?{i}\s*</t[dh]>\s*<td[^>]*>\s*([^<]+?)\s*</td>', text, re.IGNORECASE)
-
-                    # Pattern C: JSON / KV / Plain text "CH1": 27.7 or CH1 27.7 or CH01: 27.7
                     if not match:
                         match = re.search(rf'CH0?{i}["\'\s:=]*?(-?\d+(?:\.\d+)?)', text, re.IGNORECASE)
 
