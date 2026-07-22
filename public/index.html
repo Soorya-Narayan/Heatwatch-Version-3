@@ -1912,23 +1912,6 @@
       const pageHeight = doc.internal.pageSize.getHeight();
 
       const logoBase64 = await getGooseLogoBase64();
-      if (logoBase64) {
-        doc.addImage(logoBase64, 'PNG', 14, 8, 42, 16);
-      }
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(15);
-      doc.setTextColor(15, 23, 42);
-      doc.text('HeatWatch 3 — Telemetry Log History', logoBase64 ? 60 : 14, 16);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(100, 116, 139);
-      doc.text(`Generated: ${new Date().toLocaleString()} | Total Logs: ${historyData.length}`, logoBase64 ? 60 : 14, 22);
-
-      doc.setDrawColor(226, 232, 240);
-      doc.setLineWidth(0.5);
-      doc.line(14, 27, pageWidth - 14, 27);
 
       const tableHead = [['Timestamp', 'Channel', 'Temperature', 'Status']];
       const tableBody = historyData.slice(-300).reverse().map(r => {
@@ -1952,12 +1935,31 @@
       });
 
       doc.autoTable({
-        startY: 30,
+        startY: 32,
+        margin: { top: 32, bottom: 16 },
         head: tableHead,
         body: tableBody,
         theme: 'striped',
         headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
-        styles: { fontSize: 8.5, cellPadding: 2.2 }
+        styles: { fontSize: 8.5, cellPadding: 2.2 },
+        didDrawPage: (data) => {
+          if (logoBase64) {
+            doc.addImage(logoBase64, 'PNG', 14, 6, 42, 16);
+          }
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(14);
+          doc.setTextColor(15, 23, 42);
+          doc.text('HeatWatch 3 — Telemetry Log History', logoBase64 ? 60 : 14, 15);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.5);
+          doc.setTextColor(100, 116, 139);
+          doc.text(`Generated: ${new Date().toLocaleString()} | Total Logs: ${historyData.length}`, logoBase64 ? 60 : 14, 20);
+
+          doc.setDrawColor(226, 232, 240);
+          doc.setLineWidth(0.5);
+          doc.line(14, 25, pageWidth - 14, 25);
+        }
       });
 
       const totalPages = doc.internal.getNumberOfPages();
