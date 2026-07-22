@@ -79,45 +79,35 @@ function getCpuUsagePercent() {
   return Math.round(100 * (1 - idleDiff / totalDiff));
 }
 
-// Robust Universal PPI AIME 8U Parser (HTML / XML)
+// Robust Universal PPI AIME 8U Parser (HTML / XML / JSON / Text)
 function parsePpiResponse(text) {
   const readings = {};
   if (!text) return readings;
 
-  // 1. Try XML tags: <CH1>27.7</CH1>
   for (let i = 1; i <= 8; i++) {
     const chKey = `CH${i}`;
-    const xmlMatch = text.match(new RegExp(`<${chKey}>\\s*([^<]+)\\s*</${chKey}>`, 'i'));
-    if (xmlMatch) {
-      const num = parseFloat(xmlMatch[1].trim());
-      if (!isNaN(num) && num !== 0 && num > -999 && num < 999) {
-        readings[chKey] = num;
-      }
+    
+    // Pattern A: XML tags <CH1>27.7</CH1>
+    let match = text.match(new RegExp(`<${chKey}>\\s*([^<]+?)\\s*</${chKey}>`, 'i'));
+    
+    // Pattern B: HTML Table cells <td>CH1</td><td>27.7</td>
+    if (!match) {
+      match = text.match(new RegExp(`${chKey}\\s*</t[dh]>\\s*<td[^>]*>\\s*([^<]+?)\\s*</td>`, 'i'));
     }
-  }
-  if (Object.keys(readings).length > 0) return readings;
 
-  // 2. Strict HTML Table Cell Matching (prevents matching numbers from next channel or HTML attributes)
-  for (let i = 1; i <= 8; i++) {
-    const chKey = `CH${i}`;
-    const cellRegex = new RegExp(`${chKey}\\s*</t[dh]>\\s*<td[^>]*>\\s*([^<]+?)\\s*</td>`, 'i');
-    const cellMatch = text.match(cellRegex);
-    if (cellMatch) {
-      const num = parseFloat(cellMatch[1].trim());
-      if (!isNaN(num) && num !== 0 && num > -999 && num < 999) {
+    // Pattern C: JSON / KV / Plain text "CH1": 27.7 or CH1 27.7
+    if (!match) {
+      match = text.match(new RegExp(`${chKey}["'\\s:=]*?(-?\\d+(?:\\.\\d+)?)`, 'i'));
+    }
+
+    if (match) {
+      const num = parseFloat(match[1].trim());
+      if (!isNaN(num)) {
         readings[chKey] = num;
-      }
-    } else {
-      const lineRegex = new RegExp(`${chKey}\\s*[:=]\\s*(-?\\d+(?:\\.\\d+)?)`, 'i');
-      const lineMatch = text.match(lineRegex);
-      if (lineMatch) {
-        const num = parseFloat(lineMatch[1]);
-        if (!isNaN(num) && num !== 0 && num > -999 && num < 999) {
-          readings[chKey] = num;
-        }
       }
     }
   }
+
   return readings;
 }
 

@@ -31,63 +31,43 @@ except Exception as e:
     print(f"[HeatWatch 3 Poller] InfluxDB init notice: {e}")
 
 def poll_aime_hardware():
-    """Poll PPI AIME 8U via XML endpoint or HTML scraping fallback"""
-    channels = {}
+    """Poll PPI AIME 8U via HTTP (index.xml, index.html, or root)"""
+    urls = [f"{AIME_URL}/index.xml", f"{AIME_URL}/", f"{AIME_URL}/index.html"]
 
-    # Method 1: Try XML endpoint (index.xml)
-    try:
-        resp = requests.get(f"{AIME_URL}/index.xml", timeout=2.0)
-        if resp.status_code == 200:
-            tree = ET.fromstring(resp.content)
-            for i in range(1, 9):
-                ch_key = f"CH{i}"
-                elem = tree.find(ch_key)
-                if elem is not None and elem.text:
-                    try:
-                        val = float(elem.text.strip())
-                        if val != 0 and -999 < val < 999:
-                            channels[ch_key] = val
-                    except ValueError:
-                        pass
-            if channels:
-                return channels
-    except Exception:
-        pass
+    for url in urls:
+        try:
+            resp = requests.get(url, timeout=2.0)
+            if resp.status_code == 200:
+                text = resp.text
+                channels = {}
 
-    # Method 2: HTML Page Parsing (Scrape http://192.168.1.2/)
-    try:
-        resp = requests.get(f"{AIME_URL}/", timeout=2.5)
-        if resp.status_code == 200:
-            html = resp.text
-            for i in range(1, 9):
-                ch_key = f"CH{i}"
-                # Strict cell matching: CH1 in td/th, then immediately next td content (prevents greedy skipping to next channels)
-                pattern = rf'{ch_key}\s*</t[dh]>\s*<td[^>]*>\s*([^<]+?)\s*</td>'
-                match = re.search(pattern, html, re.IGNORECASE)
-                if match:
-                    try:
-                        val = float(match.group(1).strip())
-                        if val != 0 and -999 < val < 999:
-                            channels[ch_key] = val
-                    except ValueError:
-                        pass
-                else:
-                    # Line match fallback: CH1: 27.7
-                    pattern_alt = rf'{ch_key}\s*[:=]\s*(-?\d+(?:\.\d+)?)'
-                    match_alt = re.search(pattern_alt, html, re.IGNORECASE)
-                    if match_alt:
+                for i in range(1, 9):
+                    ch_key = f"CH{i}"
+                    
+                    # Pattern A: XML tags <CH1>27.7</CH1>
+                    match = re.search(rf'<{ch_key}>\s*([^<]+?)\s*</{ch_key}>', text, re.IGNORECASE)
+                    
+                    # Pattern B: HTML Table cells <td>CH1</td><td>27.7</td>
+                    if not match:
+                        match = re.search(rf'{ch_key}\s*</t[dh]>\s*<td[^>]*>\s*([^<]+?)\s*</td>', text, re.IGNORECASE)
+
+                    # Pattern C: KV / JSON / Plain text "CH1": 27.7 or CH1 27.7
+                    if not match:
+                        match = re.search(rf'{ch_key}["\'\s:=]*?(-?\d+(?:\.\d+)?)', text, re.IGNORECASE)
+
+                    if match:
                         try:
-                            val = float(match_alt.group(1))
-                            if val != 0 and -999 < val < 999:
-                                channels[ch_key] = val
+                            val = float(match.group(1).strip())
+                            channels[ch_key] = val
                         except ValueError:
                             pass
-            if channels:
-                return channels
-    except Exception:
-        pass
 
-    return channels
+                if channels:
+                    return channels
+        except Exception:
+            pass
+
+    return {}
 
 def write_to_influx(data):
     """Write live 8 channel points to InfluxDB"""
