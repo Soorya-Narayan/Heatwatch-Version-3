@@ -449,7 +449,7 @@ async function broadcastTelemetry() {
   const packet = currentSensors.map(s => {
     const rawVal = latestReadings[s.id];
     const numVal = parseFloat(rawVal);
-    const isOpenFault = rawVal === 'OPEN' || rawVal === 'ERR' || numVal >= 999 || numVal <= -999;
+    const isOpenFault = rawVal === 'OPEN' || rawVal === 'ERR' || numVal >= 999 || numVal <= -999 || numVal === 0;
     const isOffline = rawVal === undefined || rawVal === null || isNaN(numVal) || isOpenFault;
 
     return {
