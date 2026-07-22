@@ -226,7 +226,90 @@
 
   .btn:hover { opacity: 0.95; transform: translateY(-1px); }
   .btn-secondary { background: rgba(255, 255, 255, 0.08); color: var(--text-main); box-shadow: none; }
-  :root.light-mode .btn-secondary { background: rgba(0, 0, 0, 0.08); }
+  :root.light-mode .btn-secondary { background: rgba(0, 0, 0, 0.06); color: #1e293b; border: 1px solid #cbd5e1; }
+
+  /* Protected Settings & Inputs Styling */
+  .setting-channel-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    padding: 14px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  :root.light-mode .setting-channel-card {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+  .setting-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--text-main);
+  }
+  :root.light-mode .setting-card-header {
+    color: #0f172a;
+  }
+  .setting-field-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  :root.light-mode .setting-field-label {
+    color: #475569;
+  }
+  .setting-input {
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    font-size: 0.85rem;
+  }
+  :root.light-mode .setting-input {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+  }
+  :root.light-mode .setting-input:focus {
+    background: #ffffff;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+  .thresh-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .thresh-lbl {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 3px;
+    text-align: center;
+  }
+  .lolo-lbl { color: var(--accent-alarm); }
+  .lo-lbl { color: var(--accent-warning); }
+  .hi-lbl { color: var(--accent-warning); }
+  .hihi-lbl { color: var(--accent-alarm); }
+
+  :root.light-mode .chart-card {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  }
 
   /* --------------------------------------------------------- */
   /* 3. DIGITAL TOUCHSCREEN VIRTUAL KEYBOARD                   */
@@ -650,12 +733,6 @@
     </div>
 
     <div class="nav-right">
-      <!-- PPI Hardware Connection Badge -->
-      <div id="ppi-badge" title="PPI AIME 8U Hardware Status" style="display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); font-size:0.72rem; font-weight:600; letter-spacing:0.5px; color:var(--text-muted); cursor:default; transition:all 0.3s;">
-        <span id="ppi-dot" style="width:7px; height:7px; border-radius:50%; background:#4a5568; display:inline-block; transition:background 0.3s;"></span>
-        <span id="ppi-label">PPI</span>
-      </div>
-
       <!-- Theme Toggle Button -->
       <button class="icon-nav-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="theme-icon-sun" style="display: none;">
@@ -687,17 +764,6 @@
   <main class="view-container">
     <section id="view-live" class="view-panel active">
       <div class="telemetry-grid" id="main-sensor-grid"></div>
-
-      <!-- 24h Min / Max / Avg Summary -->
-      <div class="chart-card" id="stats-summary-card" style="margin-top: 10px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <h3 style="font-size:0.9rem; margin:0;">📊 24-Hour Channel Summary</h3>
-          <button class="btn btn-secondary" style="padding:3px 10px; font-size:0.75rem;" onclick="fetchChannelStats()">Refresh</button>
-        </div>
-        <div id="stats-summary-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
-          <div style="text-align:center; color:var(--text-dim); font-size:0.8rem; padding:12px; grid-column:1/-1;">Loading 24h statistics...</div>
-        </div>
-      </div>
     </section>
 
     <section id="view-trends" class="view-panel">
@@ -721,6 +787,17 @@
         </div>
         <div style="flex: 1; min-height: 380px; position: relative; width: 100%; height: 100%;">
           <canvas id="trendsChartCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
+        </div>
+      </div>
+
+      <!-- 24h Min / Max / Avg Summary (Relocated from Live View) -->
+      <div class="chart-card" id="stats-summary-card" style="margin-top: 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h3 style="font-size:0.9rem; margin:0;">24-Hour Channel Summary</h3>
+          <button class="btn btn-secondary" style="padding:3px 10px; font-size:0.75rem;" onclick="fetchChannelStats()">Refresh</button>
+        </div>
+        <div id="stats-summary-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+          <div style="text-align:center; color:var(--text-dim); font-size:0.8rem; padding:12px; grid-column:1/-1;">Loading 24h statistics...</div>
         </div>
       </div>
     </section>
@@ -775,29 +852,12 @@
           <div><strong>Hardware System:</strong> <span id="sys-platform">--</span></div>
           <div><strong>System Uptime:</strong> <span id="sys-uptime">--</span></div>
           <div><strong>InfluxDB Data Size:</strong> <span id="sys-dbsize">--</span></div>
-          <div><strong>Hardware Interface:</strong> <span style="color: var(--accent-green);">PPI AIME 8U (HTTP XML @ 192.168.1.2)</span></div>
-        </div>
-      </div>
-
-      <div class="chart-card" style="margin-top: 12px;">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;">
-            <circle cx="12" cy="12" r="10" stroke="#06b6d4" stroke-width="1.5"/>
-            <path d="M12 2C12 2 7 7 7 12s5 10 5 10 5-5 5-10S12 2 12 2z" stroke="#06b6d4" stroke-width="1.5" fill="none"/>
-            <path d="M2 12h20" stroke="#06b6d4" stroke-width="1.5"/>
-          </svg>
-          <h3 style="margin:0;">Remote Support — Tailscale</h3>
-        </div>
-        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
-          <span style="font-size: 0.82rem; color: var(--text-muted);">Status &amp; Remote IP:</span>
-          <span id="sys-tailscale" style="display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
-            <span class="alarm-status-pill status-offline"><span class="status-dot-indicator"></span>Not installed</span>
-          </span>
-        </div>
-        <div style="margin-top: 12px; font-size: 0.82rem; color: var(--text-dim); line-height: 1.7;">
-          <div>To enable remote support, run on the Pi:</div>
-          <code style="display:block; margin-top:6px; padding:8px 12px; background: rgba(255,255,255,0.04); border-radius:8px; color: var(--accent-cyan); font-size:0.8rem; border: 1px solid var(--border-color);">sudo bash scripts/setup-tailscale.sh</code>
-          <div style="margin-top:8px;">After setup, Goose support can access this unit at <code style="color:var(--accent-blue);">http://&lt;tailscale-ip&gt;:3001</code> from anywhere.</div>
+          <div><strong>Hardware Interface:</strong> <span style="color: var(--accent-green);">PPI AIME 8U</span>
+            <span id="ppi-badge" title="PPI AIME 8U Hardware Connection Status" style="display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); font-size:0.7rem; font-weight:600; color:var(--text-muted); margin-left:8px;">
+              <span id="ppi-dot" style="width:6px; height:6px; border-radius:50%; background:#4a5568; display:inline-block;"></span>
+              <span id="ppi-label">PPI</span>
+            </span>
+          </div>
         </div>
       </div>
     </section>
@@ -1571,15 +1631,36 @@
 
     wizardSensors.forEach((s, idx) => {
       const card = document.createElement('div');
-      card.style.cssText = 'background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; display: flex; flex-direction: column; gap: 8px;';
+      card.className = 'setting-channel-card';
       card.innerHTML = `
-        <strong>${s.id} Settings</strong>
-        <input type="text" id="adm-label-${idx}" value="${s.label}">
-        <div class="thresh-inputs">
-          <input type="number" id="adm-lolo-${idx}" value="${s.lolo}">
-          <input type="number" id="adm-lo-${idx}" value="${s.lo}">
-          <input type="number" id="adm-hi-${idx}" value="${s.hi}">
-          <input type="number" id="adm-hihi-${idx}" value="${s.hihi}">
+        <div class="setting-card-header">
+          <span class="ch-badge">${s.id}</span>
+          <span>${s.id} Channel Configuration</span>
+        </div>
+        <div>
+          <label class="setting-field-label">Channel Description / Label</label>
+          <input type="text" class="setting-input" id="adm-label-${idx}" value="${s.label}">
+        </div>
+        <div>
+          <label class="setting-field-label">Alarm Threshold Limits (°C)</label>
+          <div class="thresh-grid">
+            <div>
+              <span class="thresh-lbl lolo-lbl">LoLo</span>
+              <input type="number" class="setting-input" id="adm-lolo-${idx}" value="${s.lolo}">
+            </div>
+            <div>
+              <span class="thresh-lbl lo-lbl">Lo</span>
+              <input type="number" class="setting-input" id="adm-lo-${idx}" value="${s.lo}">
+            </div>
+            <div>
+              <span class="thresh-lbl hi-lbl">Hi</span>
+              <input type="number" class="setting-input" id="adm-hi-${idx}" value="${s.hi}">
+            </div>
+            <div>
+              <span class="thresh-lbl hihi-lbl">HiHi</span>
+              <input type="number" class="setting-input" id="adm-hihi-${idx}" value="${s.hihi}">
+            </div>
+          </div>
         </div>
       `;
       grid.appendChild(card);
@@ -1618,20 +1699,6 @@
     document.getElementById('sys-platform').innerText = d.platform;
     document.getElementById('sys-uptime').innerText = `${Math.floor(d.uptime / 3600)}h ${Math.floor((d.uptime % 3600) / 60)}m`;
     document.getElementById('sys-dbsize').innerText = d.dbSize;
-
-    // Tailscale status
-    const tsEl = document.getElementById('sys-tailscale');
-    if (tsEl) {
-      const isConnected = d.tailscaleStatus === 'Connected';
-      const ip = d.tailscaleIp || '--';
-      tsEl.innerHTML = `
-        <span class="alarm-status-pill ${isConnected ? 'status-normal' : 'status-offline'}" style="margin-right:8px;">
-          <span class="status-dot-indicator"></span>${d.tailscaleStatus}
-        </span>
-        ${isConnected ? `<span style="font-family:monospace; color:var(--accent-cyan);">${ip}</span>
-          <a href="http://${ip}:3001" target="_blank" style="margin-left:8px; font-size:0.75rem; color:var(--accent-blue); text-decoration:none;">Open remotely ↗</a>` : ''}
-      `;
-    }
   }
 
 
