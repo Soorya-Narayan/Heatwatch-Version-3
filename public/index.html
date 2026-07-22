@@ -695,8 +695,8 @@
             <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="loadTrends('24h')">24 Hours</button>
           </div>
         </div>
-        <div style="flex: 1; min-height: 380px; position: relative;">
-          <canvas id="trendsChartCanvas"></canvas>
+        <div style="flex: 1; min-height: 380px; position: relative; width: 100%; height: 100%;">
+          <canvas id="trendsChartCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
         </div>
       </div>
     </section>
@@ -1316,8 +1316,15 @@
     document.getElementById(`view-${viewId}`).classList.add('active');
     toggleDrawer(false);
 
-    if (viewId === 'trends' && !trendsChart) { initChart(); loadTrends('1h'); }
-    else if (viewId === 'usage') { fetchUsageStats(); }
+    if (viewId === 'trends') {
+      setTimeout(() => {
+        if (!trendsChart) initChart();
+        else trendsChart.resize();
+        loadTrends('1h');
+      }, 60);
+    } else if (viewId === 'usage') {
+      fetchUsageStats();
+    }
   }
 
   function requestProtectedView(viewId, btn) {
@@ -1510,21 +1517,34 @@
   async function loadTrends(range) {
     if (!trendsChart) initChart();
 
-    const res = await fetch(`/api/history?range=${range}`);
-    const r = await res.json();
-    if (!r.ok || !r.data || r.data.length === 0) return;
-
+    let historyOk = false;
     const channelData = {};
     const timestampSet = new Set();
 
-    r.data.forEach(item => {
-      if (!item.channel || item.value === null || item.value === undefined) return;
-      const chKey = item.channel;
-      if (!channelData[chKey]) channelData[chKey] = [];
-      const timeLabel = new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      timestampSet.add(timeLabel);
-      channelData[chKey].push({ x: timeLabel, y: item.value });
-    });
+    try {
+      const res = await fetch(`/api/history?range=${range}`);
+      const r = await res.json();
+      if (r.ok && r.data && r.data.length > 0) {
+        historyOk = true;
+        r.data.forEach(item => {
+          if (!item.channel || item.value === null || item.value === undefined) return;
+          const chKey = item.channel;
+          if (!channelData[chKey]) channelData[chKey] = [];
+          const timeLabel = new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          timestampSet.add(timeLabel);
+          channelData[chKey].push({ x: timeLabel, y: item.value });
+        });
+      }
+    } catch(e) {}
+
+    if (!historyOk) {
+      const nowLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      timestampSet.add(nowLabel);
+      wizardSensors.forEach(s => {
+        const val = (s.offline || s.val === '--') ? null : parseFloat(s.val);
+        channelData[s.id] = [{ x: nowLabel, y: val }];
+      });
+    }
 
     const labels = Array.from(timestampSet);
     trendsChart.data.labels = labels;
@@ -1539,6 +1559,7 @@
       }
     });
 
+    trendsChart.resize();
     trendsChart.update();
   }
 
