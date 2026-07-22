@@ -1217,6 +1217,7 @@
       const msg = JSON.parse(event.data);
       if (msg.type === 'telemetry') {
         renderMainTelemetryGrid(msg.sensors);
+        appendLiveTrendPoint(msg.time, msg.sensors);
       }
     };
 
@@ -1227,6 +1228,27 @@
     ws.onerror = () => {
       ws.close();
     };
+  }
+
+  function appendLiveTrendPoint(timeStr, sensors) {
+    if (!trendsChart || !trendsChart.data || !trendsChart.data.datasets) return;
+    const timeLabel = new Date(timeStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    
+    if (trendsChart.data.labels.length === 0 || !trendsChart.data.labels.includes(timeLabel)) {
+      trendsChart.data.labels.push(timeLabel);
+      if (trendsChart.data.labels.length > 50) trendsChart.data.labels.shift();
+    }
+
+    sensors.forEach(s => {
+      if (s.offline || s.val === '--') return;
+      let dataset = trendsChart.data.datasets.find(d => d.label.startsWith(s.id));
+      if (dataset) {
+        dataset.data.push(parseFloat(s.val));
+        if (dataset.data.length > 50) dataset.data.shift();
+      }
+    });
+
+    trendsChart.update('none');
   }
 
   function renderMainTelemetryGrid(sensors) {
@@ -1430,7 +1452,37 @@
     trendsChart = new Chart(ctx, {
       type: 'line',
       data: { labels: [], datasets: [] },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { color: isLight ? '#0f172a' : '#f1f5f9', font: { family: 'Inter', size: 12, weight: '600' } }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            titleColor: '#06b6d4',
+            bodyColor: '#f1f5f9',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          x: {
+            type: 'category',
+            grid: { color: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)' },
+            ticks: { color: isLight ? '#475569' : '#94a3b8', font: { family: 'Inter', size: 11 }, maxTicksLimit: 12 }
+          },
+          y: {
+            grid: { color: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)' },
+            ticks: { color: isLight ? '#475569' : '#94a3b8', font: { family: 'Inter', size: 11 } },
+            title: { display: true, text: 'Temperature (°C)', color: isLight ? '#475569' : '#94a3b8' }
+          }
+        }
+      }
     });
   }
 
@@ -1438,15 +1490,37 @@
     const res = await fetch(`/api/history?range=${range}`);
     const r = await res.json();
     if (!r.ok || !trendsChart) return;
+
     const channelData = {};
+    const timestampSet = new Set();
+
     r.data.forEach(item => {
+      if (!item.channel || item.value === null || item.value === undefined) return;
       if (!channelData[item.channel]) channelData[item.channel] = [];
-      channelData[item.channel].push({ x: new Date(item.time).toLocaleTimeString(), y: item.value });
+      const timeLabel = new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      timestampSet.add(timeLabel);
+      channelData[item.channel].push(item.value);
     });
+
+    const labels = Array.from(timestampSet);
     const colors = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#f97316'];
-    trendsChart.data.datasets = Object.keys(channelData).map((ch, i) => ({
-      label: ch, data: channelData[ch], borderColor: colors[i % colors.length], borderWidth: 2, tension: 0.3, pointRadius: 0
-    }));
+
+    trendsChart.data.labels = labels;
+    trendsChart.data.datasets = Object.keys(channelData).map((ch, i) => {
+      const sensorInfo = wizardSensors.find(s => s.id === ch);
+      const displayLabel = sensorInfo ? `${ch} (${sensorInfo.label})` : ch;
+      return {
+        label: displayLabel,
+        data: channelData[ch],
+        borderColor: colors[i % colors.length],
+        backgroundColor: colors[i % colors.length],
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: 1,
+        fill: false
+      };
+    });
+
     trendsChart.update();
   }
 

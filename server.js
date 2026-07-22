@@ -353,10 +353,10 @@ app.get('/api/system', (req, res) => {
 
 app.get('/api/history', async (req, res) => {
   const { range = '1h', sensor = 'all' } = req.query;
-  let rangeStart = '-1h';
-  if (range === '6h') rangeStart = '-6h';
-  else if (range === '24h') rangeStart = '-24h';
-  else if (range === '7d') rangeStart = '-7d';
+  let rangeStart = '-1h', windowSize = '10s';
+  if (range === '6h') { rangeStart = '-6h'; windowSize = '1m'; }
+  else if (range === '24h') { rangeStart = '-24h'; windowSize = '5m'; }
+  else if (range === '7d') { rangeStart = '-7d'; windowSize = '30m'; }
 
   let filterSensor = '';
   if (sensor !== 'all') {
@@ -365,8 +365,9 @@ app.get('/api/history', async (req, res) => {
 
   const q = `from(bucket: "${INFLUX_BUCKET}")
     |> range(start: ${rangeStart})
-    |> filter(fn: (r) => r._measurement == "temperature")
+    |> filter(fn: (r) => r._measurement == "temperature" and r._field == "value")
     ${filterSensor}
+    |> aggregateWindow(every: ${windowSize}, fn: mean, createEmpty: false)
     |> yield(name: "mean")`;
 
   try {
