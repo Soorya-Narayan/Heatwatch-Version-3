@@ -333,6 +333,23 @@ app.get('/api/system', (req, res) => {
       dbSize = execSync('sudo du -sh /var/lib/influxdb 2>/dev/null').toString().trim().split(/\s+/)[0] || '--';
     } catch (e) {}
 
+    // Tailscale status
+    let tailscaleIp = null, tailscaleStatus = 'Not installed';
+    try {
+      tailscaleIp = fs.readFileSync('/tmp/tailscale_ip.txt', 'utf8').trim();
+      if (!tailscaleIp || tailscaleIp === 'Not connected') {
+        tailscaleIp = null;
+        tailscaleStatus = 'Not connected';
+      } else {
+        tailscaleStatus = 'Connected';
+      }
+    } catch (e) {
+      try {
+        tailscaleIp = execSync('tailscale ip --4 2>/dev/null').toString().trim();
+        tailscaleStatus = tailscaleIp ? 'Connected' : 'Not connected';
+      } catch (e2) {}
+    }
+
     res.json({
       cpu,
       cpuTemp,
@@ -344,10 +361,12 @@ app.get('/api/system', (req, res) => {
       diskPct,
       dbSize,
       uptime: Math.floor(os.uptime()),
-      platform: `${os.hostname()} (${os.arch()})`
+      platform: `${os.hostname()} (${os.arch()})`,
+      tailscaleIp,
+      tailscaleStatus
     });
   } catch (e) {
-    res.json({ cpu: 0, cpuTemp: '--', memUsed: '--', memTotal: '--', memPct: 0, diskUsed: '--', diskTotal: '--', diskPct: 0, dbSize: '--', uptime: 0, platform: 'Linux' });
+    res.json({ cpu: 0, cpuTemp: '--', memUsed: '--', memTotal: '--', memPct: 0, diskUsed: '--', diskTotal: '--', diskPct: 0, dbSize: '--', uptime: 0, platform: 'Linux', tailscaleIp: null, tailscaleStatus: 'Not installed' });
   }
 });
 

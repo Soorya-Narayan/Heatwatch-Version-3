@@ -5,15 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HeatWatch 3 — Industrial Telemetry Platform</title>
 
-<!-- Fonts & External Libraries -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Fonts & External Libraries — served locally for offline Pi operation -->
+<link rel="stylesheet" href="/fonts/fonts.css">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="/lib/chart.umd.min.js"></script>
+<script src="/lib/xlsx.full.min.js"></script>
+<script src="/lib/jspdf.umd.min.js"></script>
+<script src="/lib/jspdf.plugin.autotable.min.js"></script>
 
 <style>
   :root {
@@ -763,7 +761,30 @@
           <div><strong>Hardware Interface:</strong> <span style="color: var(--accent-green);">PPI AIME 8U (HTTP XML @ 192.168.1.2)</span></div>
         </div>
       </div>
+
+      <div class="chart-card" style="margin-top: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;">
+            <circle cx="12" cy="12" r="10" stroke="#06b6d4" stroke-width="1.5"/>
+            <path d="M12 2C12 2 7 7 7 12s5 10 5 10 5-5 5-10S12 2 12 2z" stroke="#06b6d4" stroke-width="1.5" fill="none"/>
+            <path d="M2 12h20" stroke="#06b6d4" stroke-width="1.5"/>
+          </svg>
+          <h3 style="margin:0;">Remote Support — Tailscale</h3>
+        </div>
+        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+          <span style="font-size: 0.82rem; color: var(--text-muted);">Status &amp; Remote IP:</span>
+          <span id="sys-tailscale" style="display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+            <span class="alarm-status-pill status-offline"><span class="status-dot-indicator"></span>Not installed</span>
+          </span>
+        </div>
+        <div style="margin-top: 12px; font-size: 0.82rem; color: var(--text-dim); line-height: 1.7;">
+          <div>To enable remote support, run on the Pi:</div>
+          <code style="display:block; margin-top:6px; padding:8px 12px; background: rgba(255,255,255,0.04); border-radius:8px; color: var(--accent-cyan); font-size:0.8rem; border: 1px solid var(--border-color);">sudo bash scripts/setup-tailscale.sh</code>
+          <div style="margin-top:8px;">After setup, Goose support can access this unit at <code style="color:var(--accent-blue);">http://&lt;tailscale-ip&gt;:3001</code> from anywhere.</div>
+        </div>
+      </div>
     </section>
+
 
     <section id="view-settings" class="view-panel">
       <div class="chart-card">
@@ -1465,7 +1486,22 @@
     document.getElementById('sys-platform').innerText = d.platform;
     document.getElementById('sys-uptime').innerText = `${Math.floor(d.uptime / 3600)}h ${Math.floor((d.uptime % 3600) / 60)}m`;
     document.getElementById('sys-dbsize').innerText = d.dbSize;
+
+    // Tailscale status
+    const tsEl = document.getElementById('sys-tailscale');
+    if (tsEl) {
+      const isConnected = d.tailscaleStatus === 'Connected';
+      const ip = d.tailscaleIp || '--';
+      tsEl.innerHTML = `
+        <span class="alarm-status-pill ${isConnected ? 'status-normal' : 'status-offline'}" style="margin-right:8px;">
+          <span class="status-dot-indicator"></span>${d.tailscaleStatus}
+        </span>
+        ${isConnected ? `<span style="font-family:monospace; color:var(--accent-cyan);">${ip}</span>
+          <a href="http://${ip}:3001" target="_blank" style="margin-left:8px; font-size:0.75rem; color:var(--accent-blue); text-decoration:none;">Open remotely ↗</a>` : ''}
+      `;
+    }
   }
+
 
   function initChart() {
     const canvas = document.getElementById('trendsChartCanvas');
