@@ -1218,6 +1218,8 @@
     }
   }
 
+  let latestTelemetryPacket = [];
+
   function initWebSocket() {
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${protocol}//${location.host}`);
@@ -1225,6 +1227,7 @@
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
       if (msg.type === 'telemetry') {
+        latestTelemetryPacket = msg.sensors || [];
         renderMainTelemetryGrid(msg.sensors);
         appendLiveTrendPoint(msg.time, msg.sensors);
       }
@@ -1578,6 +1581,44 @@
     trendsChart.update();
   }
 
+  function getGooseLogoBase64() {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || 600;
+          canvas.height = img.naturalHeight || 200;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } catch(e) {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = 'goose_logo.png?' + Date.now();
+    });
+  }
+
+  function getChartImageForPDF() {
+    const chartCanvas = document.getElementById('trendsChartCanvas');
+    if (!chartCanvas) return null;
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = chartCanvas.width || 1200;
+    offscreen.height = chartCanvas.height || 600;
+    const ctx = offscreen.getContext('2d');
+
+    // Fill dark navy slate background container so all white labels, ticks, and legend texts are 100% visible and readable
+    ctx.fillStyle = '#0e131f';
+    ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+
+    ctx.drawImage(chartCanvas, 0, 0);
+    return offscreen.toDataURL('image/png', 1.0);
+  }
+
   function exportTrendsCSV() {
     if (!trendsChart || !trendsChart.data || !trendsChart.data.labels || trendsChart.data.labels.length === 0) {
       return alert('No trend data available to export!');
@@ -1588,8 +1629,12 @@
     trendsChart.data.labels.forEach((lbl, idx) => {
       const row = [`"${lbl}"`];
       wizardSensors.forEach(s => {
+        const liveSensor = latestTelemetryPacket.find(p => p.id === s.id);
         const ds = trendsChart.data.datasets.find(d => d.label.startsWith(s.id));
-        const val = (ds && ds.data[idx] !== undefined && ds.data[idx] !== null) ? ds.data[idx] : '';
+        let val = (ds && ds.data[idx] !== undefined && ds.data[idx] !== null) ? ds.data[idx] : '';
+        if (idx === trendsChart.data.labels.length - 1 && liveSensor) {
+          val = (liveSensor.offline || liveSensor.val === '--') ? '' : liveSensor.val;
+        }
         row.push(val);
       });
       csv += row.join(',') + '\n';
@@ -1612,62 +1657,53 @@
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    let logoBase64 = null;
-    try {
-      const img = document.querySelector('.nav-logo');
-      if (img && img.complete && img.naturalWidth > 0) {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        logoBase64 = canvas.toDataURL('image/png');
-      }
-    } catch(e) {}
+    const logoBase64 = await getGooseLogoBase64();
 
     // -------------------------------------------------------------
     // PAGE 1: Goose Logo + Header + Realtime Trend Graph Image
     // -------------------------------------------------------------
     if (logoBase64) {
-      doc.addImage(logoBase64, 'PNG', 14, 10, 42, 16);
+      doc.addImage(logoBase64, 'PNG', 14, 8, 45, 18);
     }
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(15);
     doc.setTextColor(15, 23, 42);
-    doc.text('HeatWatch 3 — Realtime Telemetry Trends', logoBase64 ? 60 : 14, 17);
+    doc.text('HeatWatch 3 — Realtime Telemetry Trends', logoBase64 ? 64 : 14, 16);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100, 116, 139);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, logoBase64 ? 60 : 14, 23);
-    doc.text(`System: HeatWatch 3 Kiosk | Range: ${currentTrendRangeLabel}`, logoBase64 ? 60 : 14, 28);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, logoBase64 ? 64 : 14, 22);
+    doc.text(`System: HeatWatch 3 Kiosk | Range: ${currentTrendRangeLabel}`, logoBase64 ? 64 : 14, 27);
 
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.5);
-    doc.line(14, 32, pageWidth - 14, 32);
+    doc.line(14, 31, pageWidth - 14, 31);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(30, 41, 59);
-    doc.text('Realtime Multi-Channel Trend Graph', 14, 39);
+    doc.text('Realtime Multi-Channel Trend Graph', 14, 38);
 
-    const chartCanvas = document.getElementById('trendsChartCanvas');
-    if (chartCanvas) {
-      const chartImg = chartCanvas.toDataURL('image/png', 1.0);
-      doc.addImage(chartImg, 'PNG', 14, 43, pageWidth - 28, 95);
+    const chartImg = getChartImageForPDF();
+    if (chartImg) {
+      doc.addImage(chartImg, 'PNG', 14, 42, pageWidth - 28, 95);
     }
 
-    // Live Channel Summary Table on Page 1
+    // Live Channel Summary Table on Page 1 (Using Exact Live Telemetry Values)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(30, 41, 59);
-    doc.text('Live Channel Summary', 14, 145);
+    doc.text('Live Telemetry Channel Summary', 14, 144);
 
-    const summaryHead = [['Channel', 'Name / Location', 'Live Temp', 'Warning High', 'Alarm HIHI', 'Status']];
+    const summaryHead = [['Channel', 'Name / Location', 'Exact Live Temp', 'Warning High', 'Alarm HIHI', 'Status']];
     const summaryBody = wizardSensors.map(s => {
-      const isOff = s.offline || s.val === '--';
-      const valNum = isOff ? 0 : parseFloat(s.val);
+      const liveSensor = latestTelemetryPacket.find(p => p.id === s.id);
+      const isOff = liveSensor ? (liveSensor.offline || liveSensor.val === '--') : (s.offline || s.val === '--');
+      const valDisplay = liveSensor ? (isOff ? '--' : `${liveSensor.val} °C`) : (isOff ? '--' : `${s.val} °C`);
+      const valNum = isOff ? 0 : parseFloat(liveSensor ? liveSensor.val : s.val);
+
       let statusStr = 'NORMAL';
       if (isOff) statusStr = 'OFFLINE';
       else if (valNum >= s.hihi) statusStr = 'HIHI ALARM';
@@ -1678,7 +1714,7 @@
       return [
         s.id,
         s.label,
-        isOff ? '--' : `${s.val} °C`,
+        valDisplay,
         `${s.hi} °C`,
         `${s.hihi} °C`,
         statusStr
@@ -1686,7 +1722,7 @@
     });
 
     doc.autoTable({
-      startY: 149,
+      startY: 148,
       head: summaryHead,
       body: summaryBody,
       theme: 'striped',
@@ -1706,17 +1742,17 @@
     doc.addPage();
 
     if (logoBase64) {
-      doc.addImage(logoBase64, 'PNG', 14, 8, 35, 14);
+      doc.addImage(logoBase64, 'PNG', 14, 8, 38, 15);
     }
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(15, 23, 42);
-    doc.text('Timestamped Telemetry Values Log', logoBase64 ? 54 : 14, 16);
+    doc.text('Timestamped Telemetry Values Log', logoBase64 ? 58 : 14, 16);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100, 116, 139);
-    doc.text(`Time Range: ${currentTrendRangeLabel} | Logged Samples: ${trendsChart.data.labels.length}`, logoBase64 ? 54 : 14, 21);
+    doc.text(`Time Range: ${currentTrendRangeLabel} | Logged Samples: ${trendsChart.data.labels.length}`, logoBase64 ? 58 : 14, 21);
 
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.5);
@@ -1726,9 +1762,15 @@
     const logBody = trendsChart.data.labels.map((lbl, idx) => {
       const row = [lbl];
       wizardSensors.forEach(s => {
+        const liveSensor = latestTelemetryPacket.find(p => p.id === s.id);
         const ds = trendsChart.data.datasets.find(d => d.label.startsWith(s.id));
-        const val = (ds && ds.data[idx] !== undefined && ds.data[idx] !== null) ? `${ds.data[idx]} °C` : '--';
-        row.push(val);
+        let valStr = '--';
+        if (idx === trendsChart.data.labels.length - 1 && liveSensor) {
+          valStr = (liveSensor.offline || liveSensor.val === '--') ? '--' : `${liveSensor.val} °C`;
+        } else if (ds && ds.data[idx] !== undefined && ds.data[idx] !== null) {
+          valStr = `${ds.data[idx]} °C`;
+        }
+        row.push(valStr);
       });
       return row;
     });
