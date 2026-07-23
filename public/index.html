@@ -530,31 +530,39 @@
 
   .channel-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
   @keyframes alarm-card-pulse {
-    0% { background: #7f1d1d; border-color: #ef4444; }
-    50% { background: #991b1b; border-color: #f87171; }
-    100% { background: #7f1d1d; border-color: #ef4444; }
+    0% { background-color: #991b1b !important; border-color: #f87171 !important; box-shadow: 0 0 25px rgba(220, 38, 38, 0.6) !important; }
+    50% { background-color: #dc2626 !important; border-color: #ffffff !important; box-shadow: 0 0 40px rgba(239, 68, 68, 0.9) !important; }
+    100% { background-color: #991b1b !important; border-color: #f87171 !important; box-shadow: 0 0 25px rgba(220, 38, 38, 0.6) !important; }
   }
 
   .channel-card.alarm-hihi, .channel-card.alarm-lolo {
-    background: #8b0000 !important;
-    border-color: #ef4444 !important;
-    animation: alarm-card-pulse 1.8s infinite ease-in-out;
+    background-color: #dc2626 !important;
+    background: #dc2626 !important;
+    border: 2px solid #ef4444 !important;
+    animation: alarm-card-pulse 1.4s infinite ease-in-out !important;
   }
   .channel-card.alarm-hihi .temp-val, .channel-card.alarm-lolo .temp-val,
   .channel-card.alarm-hihi .ch-label, .channel-card.alarm-lolo .ch-label {
     color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
   }
   .channel-card.alarm-hihi .card-meta, .channel-card.alarm-lolo .card-meta,
   .channel-card.alarm-hihi .temp-unit, .channel-card.alarm-lolo .temp-unit,
   .channel-card.alarm-hihi .card-last-updated, .channel-card.alarm-lolo .card-last-updated {
-    color: #fecaca !important;
+    color: #fef08a !important;
   }
   .channel-card.alarm-hihi .ch-badge, .channel-card.alarm-lolo .ch-badge {
-    background: rgba(0, 0, 0, 0.4) !important;
+    background: rgba(0, 0, 0, 0.5) !important;
     color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
   }
   .channel-card.alarm-hihi .threshold-bar-track, .channel-card.alarm-lolo .threshold-bar-track {
     background: rgba(0, 0, 0, 0.4) !important;
+  }
+  .channel-card.alarm-hihi .alarm-status-pill, .channel-card.alarm-lolo .alarm-status-pill {
+    background: #7f1d1d !important;
+    color: #ffffff !important;
+    border: 1px solid #fca5a5 !important;
   }
 
   .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
@@ -1509,27 +1517,27 @@
 
     try {
       const now = audioCtx.currentTime;
-      const duration = 0.28;
+      const duration = 0.35;
 
-      // Primary Low Fundamental Buzz (180Hz Square wave)
+      // Primary Horn Diaphragm (150Hz Square wave)
       const osc1 = audioCtx.createOscillator();
       osc1.type = 'square';
-      osc1.frequency.setValueAtTime(180, now);
+      osc1.frequency.setValueAtTime(150, now);
 
-      // Secondary Harmonic (360Hz Sawtooth wave)
+      // Upper Overtones (300Hz Square wave)
       const osc2 = audioCtx.createOscillator();
-      osc2.type = 'sawtooth';
-      osc2.frequency.setValueAtTime(360, now);
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(300, now);
 
-      // Sub-harmonic Metallic Buzz Growl (90Hz Square wave)
+      // Metallic Buzz Grit (450Hz Sawtooth wave)
       const osc3 = audioCtx.createOscillator();
-      osc3.type = 'square';
-      osc3.frequency.setValueAtTime(90, now);
+      osc3.type = 'sawtooth';
+      osc3.frequency.setValueAtTime(450, now);
 
       // Gain Envelope
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0.20, now);
-      gain.gain.setValueAtTime(0.20, now + duration - 0.03);
+      gain.gain.setValueAtTime(0.30, now);
+      gain.gain.setValueAtTime(0.30, now + duration - 0.05);
       gain.gain.linearRampToValueAtTime(0.001, now + duration);
 
       osc1.connect(gain);
