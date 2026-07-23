@@ -21,9 +21,9 @@
     --border-color: rgba(255, 255, 255, 0.07);
     --border-glow: rgba(59, 130, 246, 0.28);
     
-    --text-main: #e2e8f0;
-    --text-muted: #7d93b2;
-    --text-dim: #4a5568;
+    --text-main: #f8fafc;
+    --text-muted: #cbd5e1;
+    --text-dim: #94a3b8;
     
     --accent-blue: #4f8ef7;
     --accent-cyan: #06b6d4;
@@ -177,8 +177,8 @@
   .wizard-progress { display: flex; gap: 8px; margin-bottom: 4px; }
   .wizard-dot { width: 36px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); transition: all 0.3s ease; }
   :root.light-mode .wizard-dot { background: #cbd5e1; }
-  .wizard-dot.active { background: var(--accent-blue); box-shadow: 0 0 10px var(--accent-blue); }
-  :root.light-mode .wizard-dot.active { background: #2563eb; box-shadow: 0 0 10px rgba(37, 99, 235, 0.3); }
+  .wizard-dot.active { background: var(--accent-blue); box-shadow: none; }
+  :root.light-mode .wizard-dot.active { background: #2563eb; box-shadow: none; }
 
   .wizard-panel-box {
     width: 100%;
@@ -281,7 +281,7 @@
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+    box-shadow: none;
   }
 
   .btn:hover { opacity: 0.95; transform: translateY(-1px); }
@@ -504,7 +504,7 @@
   .icon-nav-btn:hover {
     background: var(--accent-blue);
     color: #ffffff;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    box-shadow: none;
   }
 
   .view-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
@@ -644,7 +644,7 @@
   .menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; background: transparent; border: none; cursor: pointer; text-align: left; transition: all 0.2s ease; }
   .menu-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-main); }
   :root.light-mode .menu-item:hover { background: rgba(0, 0, 0, 0.05); }
-  .menu-item.active { background: var(--accent-blue); color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+  .menu-item.active { background: var(--accent-blue); color: #fff; box-shadow: none; }
 
   .modal-box { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); z-index: 1200; align-items: center; justify-content: center; }
   .modal-box.active { display: flex; }
@@ -1209,9 +1209,8 @@
     document.getElementById('theme-icon-sun').style.display = isLight ? 'block' : 'none';
     document.getElementById('theme-icon-moon').style.display = isLight ? 'none' : 'block';
     if (trendsChart) {
-      trendsChart.options.scales.x.grid.color = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)';
-      trendsChart.options.scales.y.grid.color = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)';
-      trendsChart.update();
+      initChart();
+      loadTrends(currentTrendRangeLabel === '6 Hours' ? '6h' : currentTrendRangeLabel === '24 Hours' ? '24h' : '1h');
     }
   }
 
@@ -1455,25 +1454,25 @@
       stats.forEach(s => {
         const hasData = s.min !== null;
         const card = document.createElement('div');
-        card.style.cssText = 'background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:10px; padding:10px 12px; min-width:0;';
+        card.style.cssText = 'background:var(--bg-surface); border:1px solid var(--border-color); border-radius:10px; padding:10px 12px; min-width:0;';
         card.innerHTML = `
-          <div style="font-size:0.7rem; color:var(--text-dim); font-weight:600; letter-spacing:0.5px;">${s.id}</div>
-          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.label}</div>
+          <div style="font-size:0.7rem; color:var(--accent-cyan); font-weight:700; letter-spacing:0.5px;">${s.id}</div>
+          <div style="font-size:0.78rem; color:var(--text-main); font-weight:500; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.label}</div>
           ${hasData ? `
           <div style="display:flex; justify-content:space-between; gap:6px; font-size:0.8rem;">
             <div style="text-align:center; flex:1;">
-              <div style="color:#3b82f6; font-weight:700;">${s.min}°</div>
-              <div style="font-size:0.65rem; color:var(--text-dim);">MIN</div>
+              <div style="color:var(--accent-blue); font-weight:700;">${s.min}°</div>
+              <div style="font-size:0.65rem; color:var(--text-muted); font-weight:600;">MIN</div>
             </div>
             <div style="text-align:center; flex:1;">
-              <div style="color:#10b981; font-weight:700;">${s.mean}°</div>
-              <div style="font-size:0.65rem; color:var(--text-dim);">AVG</div>
+              <div style="color:var(--accent-green); font-weight:700;">${s.mean}°</div>
+              <div style="font-size:0.65rem; color:var(--text-muted); font-weight:600;">AVG</div>
             </div>
             <div style="text-align:center; flex:1;">
-              <div style="color:#ef4444; font-weight:700;">${s.max}°</div>
-              <div style="font-size:0.65rem; color:var(--text-dim);">MAX</div>
+              <div style="color:var(--accent-alarm); font-weight:700;">${s.max}°</div>
+              <div style="font-size:0.65rem; color:var(--text-muted); font-weight:600;">MAX</div>
             </div>
-          </div>` : `<div style="font-size:0.75rem; color:var(--text-dim); text-align:center; padding:4px 0;">OFFLINE</div>`}
+          </div>` : `<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:4px 0;">OFFLINE</div>`}
         `;
         grid.appendChild(card);
       });
@@ -1767,16 +1766,21 @@
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const isLight = document.documentElement.classList.contains('light-mode');
-    const colors = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#f97316'];
+
+    // Vibrant, high-contrast palette for max legibility in dark & light modes
+    const colors = isLight
+      ? ['#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#ea580c']
+      : ['#60a5fa', '#38bdf8', '#34d399', '#fbbf24', '#f87171', '#c084fc', '#f472b6', '#fb923c'];
 
     const datasets = wizardSensors.map((s, i) => ({
       label: `${s.id} (${s.label})`,
       data: [],
       borderColor: colors[i % colors.length],
       backgroundColor: colors[i % colors.length],
-      borderWidth: 2,
+      borderWidth: 2.5,
       tension: 0.3,
-      pointRadius: 2,
+      pointRadius: 2.5,
+      pointHoverRadius: 6,
       fill: false,
       spanGaps: true
     }));
@@ -1797,26 +1801,35 @@
           legend: {
             display: true,
             position: 'top',
-            labels: { color: isLight ? '#0f172a' : '#e2e8f0', font: { family: 'Inter', size: 11, weight: '600' } }
+            labels: {
+              color: isLight ? '#0f172a' : '#f8fafc',
+              font: { family: 'Inter', size: 12, weight: '600' },
+              padding: 14,
+              usePointStyle: true,
+              pointStyleWidth: 10
+            }
           },
           tooltip: {
-            backgroundColor: 'rgba(3, 8, 20, 0.95)',
-            titleColor: '#06b6d4',
-            bodyColor: '#e2e8f0',
-            borderColor: 'rgba(255, 255, 255, 0.1)',
-            borderWidth: 1
+            backgroundColor: isLight ? 'rgba(255, 255, 255, 0.98)' : 'rgba(15, 23, 42, 0.96)',
+            titleColor: isLight ? '#0f172a' : '#38bdf8',
+            bodyColor: isLight ? '#334155' : '#f8fafc',
+            borderColor: isLight ? '#cbd5e1' : 'rgba(255, 255, 255, 0.2)',
+            borderWidth: 1,
+            padding: 10,
+            boxPadding: 4,
+            usePointStyle: true
           }
         },
         scales: {
           x: {
             type: 'category',
-            grid: { color: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)' },
-            ticks: { color: isLight ? '#475569' : '#94a3b8', font: { family: 'Inter', size: 10 }, maxTicksLimit: 15 }
+            grid: { color: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.12)' },
+            ticks: { color: isLight ? '#475569' : '#cbd5e1', font: { family: 'Inter', size: 11 }, maxTicksLimit: 15 }
           },
           y: {
-            grid: { color: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)' },
-            ticks: { color: isLight ? '#475569' : '#94a3b8', font: { family: 'Inter', size: 11 } },
-            title: { display: true, text: 'Temperature (°C)', color: isLight ? '#475569' : '#94a3b8' }
+            grid: { color: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.12)' },
+            ticks: { color: isLight ? '#475569' : '#cbd5e1', font: { family: 'Inter', size: 11 } },
+            title: { display: true, text: 'Temperature (°C)', color: isLight ? '#0f172a' : '#f8fafc', font: { family: 'Inter', size: 12, weight: '600' } }
           }
         }
       }
