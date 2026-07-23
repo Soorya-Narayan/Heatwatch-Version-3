@@ -793,6 +793,29 @@
     </div>
 
     <div class="nav-right">
+      <!-- Fullscreen Kiosk Toggle Button -->
+      <button class="icon-nav-btn" id="fullscreen-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen Kiosk">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="fs-icon-expand">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        </svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="fs-icon-compress" style="display:none;">
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+        </svg>
+      </button>
+
+      <!-- Alarm Audio Mute Button -->
+      <button class="icon-nav-btn" id="audio-mute-btn" onclick="toggleAudioMute()" title="Mute Alarm Sound">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="audio-icon-on">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="audio-icon-muted" style="display:none; color:var(--accent-alarm);">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <line x1="23" y1="9" x2="17" y2="15"></line>
+          <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+      </button>
+
       <!-- Theme Toggle Button -->
       <button class="icon-nav-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="theme-icon-sun" style="display: none;">
@@ -930,6 +953,17 @@
           <button class="btn" onclick="saveAdminSettings()">Save All Changes</button>
         </div>
         <!-- Display Preferences (no password needed) -->
+        <div style="padding: 12px 0; border-bottom: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <strong>Temperature Display Unit</strong>
+            <p style="font-size:0.78rem; color:var(--text-dim); margin-top:2px;">Select unit for live readings, charts, and telemetry logs.</p>
+          </div>
+          <select id="select-temp-unit" style="padding: 6px 12px; font-weight: 700; border-radius: 8px;" onchange="setTempUnit(this.value)">
+            <option value="C">Celsius (°C)</option>
+            <option value="F">Fahrenheit (°F)</option>
+            <option value="K">Kelvin (K)</option>
+          </select>
+        </div>
         <div style="padding: 12px 0; border-bottom: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
           <div>
             <strong>Hide Offline Channels</strong>
@@ -1183,7 +1217,7 @@
     } catch(e) {}
 
     initWebSocket();
-    setTimeout(() => { fetchChannelStats(); syncHideOfflineToggle(); }, 1000);
+    setTimeout(() => { fetchChannelStats(); syncHideOfflineToggle(); syncTempUnitSelector(); syncAudioMuteUI(); }, 1000);
 
     setTimeout(() => {
       dismissAppleBootScreen();
@@ -1391,6 +1425,145 @@
   let latestTelemetryPacket = [];
   let lastWsTime = null;
   let hideOfflineChannels = localStorage.getItem('hideOfflineChannels') === 'true';
+  let currentTempUnit = localStorage.getItem('heatwatch_temp_unit') || 'C';
+  let audioMuted = localStorage.getItem('heatwatch_audio_muted') === 'true';
+
+  // --- FULLSCREEN KIOSK TOGGLE ---
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    }
+  }
+
+  document.addEventListener('fullscreenchange', () => {
+    const isFS = !!document.fullscreenElement;
+    const exp = document.getElementById('fs-icon-expand');
+    const comp = document.getElementById('fs-icon-compress');
+    if (exp && comp) {
+      exp.style.display = isFS ? 'none' : 'block';
+      comp.style.display = isFS ? 'block' : 'none';
+    }
+  });
+
+  // --- WEB AUDIO SIREN / ALARM SYNTHESIZER ---
+  let audioCtx = null;
+  let alarmSoundInterval = null;
+
+  function initAudioContext() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) audioCtx = new AudioContextClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+  }
+
+  function toggleAudioMute() {
+    audioMuted = !audioMuted;
+    localStorage.setItem('heatwatch_audio_muted', audioMuted);
+    syncAudioMuteUI();
+    if (audioMuted) {
+      stopAlarmSound();
+    }
+  }
+
+  function syncAudioMuteUI() {
+    const iconOn = document.getElementById('audio-icon-on');
+    const iconMuted = document.getElementById('audio-icon-muted');
+    const btn = document.getElementById('audio-mute-btn');
+    if (!iconOn || !iconMuted) return;
+    iconOn.style.display = audioMuted ? 'none' : 'block';
+    iconMuted.style.display = audioMuted ? 'block' : 'none';
+    if (btn) btn.title = audioMuted ? 'Unmute Alarm Sound' : 'Mute Alarm Sound';
+  }
+
+  function playAlarmBeepPulse() {
+    initAudioContext();
+    if (!audioCtx || audioCtx.state !== 'running') return;
+
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(587.33, audioCtx.currentTime + 0.18);
+
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.25);
+    } catch (e) {}
+  }
+
+  function triggerAlarmAudio(active) {
+    if (!active || audioMuted) {
+      stopAlarmSound();
+      return;
+    }
+
+    if (!alarmSoundInterval) {
+      playAlarmBeepPulse();
+      alarmSoundInterval = setInterval(playAlarmBeepPulse, 650);
+    }
+  }
+
+  function stopAlarmSound() {
+    if (alarmSoundInterval) {
+      clearInterval(alarmSoundInterval);
+      alarmSoundInterval = null;
+    }
+  }
+
+  ['click', 'touchstart', 'keydown'].forEach(evtType => {
+    window.addEventListener(evtType, () => {
+      initAudioContext();
+    }, { once: true });
+  });
+
+  // --- TEMPERATURE UNIT CONVERSION (°C / °F / K) ---
+  function convertTemp(valInC, unit = currentTempUnit) {
+    if (valInC === null || valInC === undefined || valInC === '--' || isNaN(valInC)) return null;
+    const num = parseFloat(valInC);
+    if (unit === 'F') return (num * 9 / 5) + 32;
+    if (unit === 'K') return num + 273.15;
+    return num;
+  }
+
+  function getUnitSymbol(unit = currentTempUnit) {
+    if (unit === 'F') return '°F';
+    if (unit === 'K') return 'K';
+    return '°C';
+  }
+
+  function formatTempDisplay(valInC, unit = currentTempUnit) {
+    const converted = convertTemp(valInC, unit);
+    if (converted === null) return '--';
+    return converted.toFixed(1);
+  }
+
+  function setTempUnit(unit) {
+    currentTempUnit = unit;
+    localStorage.setItem('heatwatch_temp_unit', unit);
+    syncTempUnitSelector();
+    if (latestTelemetryPacket.length) renderMainTelemetryGrid(latestTelemetryPacket);
+    fetchChannelStats();
+    if (trendsChart) {
+      initChart();
+      loadTrends(currentTrendRangeLabel === '6 Hours' ? '6h' : currentTrendRangeLabel === '24 Hours' ? '24h' : '1h');
+    }
+  }
+
+  function syncTempUnitSelector() {
+    const sel = document.getElementById('select-temp-unit');
+    if (sel) sel.value = currentTempUnit;
+  }
 
   // Initialise hide-offline toggle state when settings panel is opened
   function syncHideOfflineToggle() {
@@ -1461,15 +1634,15 @@
           ${hasData ? `
           <div style="display:flex; justify-content:space-between; gap:6px; font-size:0.8rem;">
             <div style="text-align:center; flex:1;">
-              <div style="color:var(--accent-blue); font-weight:700;">${s.min}°</div>
+              <div style="color:var(--accent-blue); font-weight:700;">${formatTempDisplay(s.min)}${getUnitSymbol()}</div>
               <div style="font-size:0.65rem; color:var(--text-muted); font-weight:600;">MIN</div>
             </div>
             <div style="text-align:center; flex:1;">
-              <div style="color:var(--accent-green); font-weight:700;">${s.mean}°</div>
+              <div style="color:var(--accent-green); font-weight:700;">${formatTempDisplay(s.mean)}${getUnitSymbol()}</div>
               <div style="font-size:0.65rem; color:var(--text-muted); font-weight:600;">AVG</div>
             </div>
             <div style="text-align:center; flex:1;">
-              <div style="color:var(--accent-alarm); font-weight:700;">${s.max}°</div>
+              <div style="color:var(--accent-alarm); font-weight:700;">${formatTempDisplay(s.max)}${getUnitSymbol()}</div>
               <div style="font-size:0.65rem; color:var(--text-muted); font-weight:600;">MAX</div>
             </div>
           </div>` : `<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:4px 0;">OFFLINE</div>`}
@@ -1520,8 +1693,11 @@
       if (s.offline || s.val === '--') return;
       let dataset = trendsChart.data.datasets.find(d => d.label.startsWith(s.id));
       if (dataset) {
-        dataset.data.push(parseFloat(s.val));
-        if (dataset.data.length > 50) dataset.data.shift();
+        const valConverted = convertTemp(s.val);
+        if (valConverted !== null) {
+          dataset.data.push(parseFloat(valConverted.toFixed(1)));
+          if (dataset.data.length > 50) dataset.data.shift();
+        }
       }
     });
 
@@ -1534,13 +1710,15 @@
 
     const secs = lastWsTime ? Math.round((Date.now() - lastWsTime) / 1000) : null;
     const updatedLabel = !secs ? 'Just now' : secs < 60 ? `${secs}s ago` : `${Math.floor(secs/60)}m ago`;
+    const unitSym = getUnitSymbol();
+    let hasActiveAlarm = false;
 
     sensors.forEach(s => {
       const isOffline = s.offline || s.val === '--';
       if (hideOfflineChannels && isOffline) return;
 
-      const valStr = isOffline ? '--' : s.val;
       const valNum = isOffline ? 0 : parseFloat(s.val);
+      const valConvertedStr = isOffline ? '--' : formatTempDisplay(valNum);
       
       let statusClass = 'status-normal', statusText = 'NORMAL', cardAlarmClass = '';
 
@@ -1548,9 +1726,9 @@
         statusClass = 'status-offline';
         statusText = 'OFFLINE';
       } else if (valNum >= s.hihi) {
-        statusClass = 'status-alarm'; statusText = 'HIHI ALARM'; cardAlarmClass = 'alarm-hihi';
+        statusClass = 'status-alarm'; statusText = 'HIHI ALARM'; cardAlarmClass = 'alarm-hihi'; hasActiveAlarm = true;
       } else if (valNum <= s.lolo) {
-        statusClass = 'status-alarm'; statusText = 'LOLO ALARM'; cardAlarmClass = 'alarm-lolo';
+        statusClass = 'status-alarm'; statusText = 'LOLO ALARM'; cardAlarmClass = 'alarm-lolo'; hasActiveAlarm = true;
       } else if (valNum >= s.hi) {
         statusClass = 'status-warning'; statusText = 'WARNING HI';
       } else if (valNum <= s.lo) {
@@ -1573,17 +1751,19 @@
           </span>
         </div>
         <div class="temp-display">
-          <span class="temp-val">${valStr}</span>
-          <span class="temp-unit">${s.unit}</span>
+          <span class="temp-val">${valConvertedStr}</span>
+          <span class="temp-unit">${unitSym}</span>
         </div>
         <div>
           <div class="threshold-bar-track"><div class="threshold-bar-fill" style="width: ${pct}%; background: ${barColor};"></div></div>
-          <div class="card-meta"><span>Lo: ${s.lo}° | Hi: ${s.hi}°</span><span>HiHi: ${s.hihi}°C</span></div>
+          <div class="card-meta"><span>Lo: ${formatTempDisplay(s.lo)}${unitSym} | Hi: ${formatTempDisplay(s.hi)}${unitSym}</span><span>HiHi: ${formatTempDisplay(s.hihi)}${unitSym}</span></div>
         </div>
         <div style="margin-top:6px; text-align:right; font-size:0.68rem; color:var(--text-dim);" class="card-last-updated">${updatedLabel}</div>
       `;
       grid.appendChild(card);
     });
+
+    triggerAlarmAudio(hasActiveAlarm);
   }
 
 
@@ -2161,7 +2341,7 @@
 
       const timeStr = new Date(item.time).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const chDisplay = `${item.channel} (${s.label})`;
-      const tempDisplay = isOff ? '--' : `${valNum.toFixed(1)} °C`;
+      const tempDisplay = isOff ? '--' : `${formatTempDisplay(valNum)} ${getUnitSymbol()}`;
 
       tr.innerHTML = `
         <td style="padding: 10px; font-family: monospace; color: var(--text-muted);">${timeStr}</td>
