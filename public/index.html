@@ -529,9 +529,32 @@
   }
 
   .channel-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
+  @keyframes alarm-card-pulse {
+    0% { background: #7f1d1d; border-color: #ef4444; }
+    50% { background: #991b1b; border-color: #f87171; }
+    100% { background: #7f1d1d; border-color: #ef4444; }
+  }
+
   .channel-card.alarm-hihi, .channel-card.alarm-lolo {
-    border-color: rgba(239, 68, 68, 0.6);
-    box-shadow: 0 0 24px rgba(239, 68, 68, 0.25);
+    background: #8b0000 !important;
+    border-color: #ef4444 !important;
+    animation: alarm-card-pulse 1.8s infinite ease-in-out;
+  }
+  .channel-card.alarm-hihi .temp-val, .channel-card.alarm-lolo .temp-val,
+  .channel-card.alarm-hihi .ch-label, .channel-card.alarm-lolo .ch-label {
+    color: #ffffff !important;
+  }
+  .channel-card.alarm-hihi .card-meta, .channel-card.alarm-lolo .card-meta,
+  .channel-card.alarm-hihi .temp-unit, .channel-card.alarm-lolo .temp-unit,
+  .channel-card.alarm-hihi .card-last-updated, .channel-card.alarm-lolo .card-last-updated {
+    color: #fecaca !important;
+  }
+  .channel-card.alarm-hihi .ch-badge, .channel-card.alarm-lolo .ch-badge {
+    background: rgba(0, 0, 0, 0.4) !important;
+    color: #ffffff !important;
+  }
+  .channel-card.alarm-hihi .threshold-bar-track, .channel-card.alarm-lolo .threshold-bar-track {
+    background: rgba(0, 0, 0, 0.4) !important;
   }
 
   .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
@@ -1480,25 +1503,48 @@
     if (btn) btn.title = audioMuted ? 'Unmute Alarm Sound' : 'Mute Alarm Sound';
   }
 
-  function playAlarmBeepPulse() {
+  function playIndustrialBuzzerPulse() {
     initAudioContext();
     if (!audioCtx || audioCtx.state !== 'running') return;
 
     try {
-      const osc = audioCtx.createOscillator();
+      const now = audioCtx.currentTime;
+      const duration = 0.28;
+
+      // Primary Low Fundamental Buzz (180Hz Square wave)
+      const osc1 = audioCtx.createOscillator();
+      osc1.type = 'square';
+      osc1.frequency.setValueAtTime(180, now);
+
+      // Secondary Harmonic (360Hz Sawtooth wave)
+      const osc2 = audioCtx.createOscillator();
+      osc2.type = 'sawtooth';
+      osc2.frequency.setValueAtTime(360, now);
+
+      // Sub-harmonic Metallic Buzz Growl (90Hz Square wave)
+      const osc3 = audioCtx.createOscillator();
+      osc3.type = 'square';
+      osc3.frequency.setValueAtTime(90, now);
+
+      // Gain Envelope
       const gain = audioCtx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(587.33, audioCtx.currentTime + 0.18);
+      gain.gain.setValueAtTime(0.20, now);
+      gain.gain.setValueAtTime(0.20, now + duration - 0.03);
+      gain.gain.linearRampToValueAtTime(0.001, now + duration);
 
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
+      osc1.connect(gain);
+      osc2.connect(gain);
+      osc3.connect(gain);
 
-      osc.connect(gain);
       gain.connect(audioCtx.destination);
 
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.25);
+      osc1.start(now);
+      osc2.start(now);
+      osc3.start(now);
+
+      osc1.stop(now + duration);
+      osc2.stop(now + duration);
+      osc3.stop(now + duration);
     } catch (e) {}
   }
 
@@ -1509,8 +1555,8 @@
     }
 
     if (!alarmSoundInterval) {
-      playAlarmBeepPulse();
-      alarmSoundInterval = setInterval(playAlarmBeepPulse, 650);
+      playIndustrialBuzzerPulse();
+      alarmSoundInterval = setInterval(playIndustrialBuzzerPulse, 500);
     }
   }
 
