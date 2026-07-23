@@ -1517,42 +1517,36 @@
 
     try {
       const now = audioCtx.currentTime;
-      const duration = 0.35;
 
-      // Primary Horn Diaphragm (150Hz Square wave)
+      // Tone 1: High Chirp (960Hz -> 720Hz)
       const osc1 = audioCtx.createOscillator();
-      osc1.type = 'square';
-      osc1.frequency.setValueAtTime(150, now);
+      const gain1 = audioCtx.createGain();
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(960, now);
+      osc1.frequency.exponentialRampToValueAtTime(720, now + 0.14);
 
-      // Upper Overtones (300Hz Square wave)
-      const osc2 = audioCtx.createOscillator();
-      osc2.type = 'square';
-      osc2.frequency.setValueAtTime(300, now);
+      gain1.gain.setValueAtTime(0.28, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
 
-      // Metallic Buzz Grit (450Hz Sawtooth wave)
-      const osc3 = audioCtx.createOscillator();
-      osc3.type = 'sawtooth';
-      osc3.frequency.setValueAtTime(450, now);
-
-      // Gain Envelope
-      const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0.30, now);
-      gain.gain.setValueAtTime(0.30, now + duration - 0.05);
-      gain.gain.linearRampToValueAtTime(0.001, now + duration);
-
-      osc1.connect(gain);
-      osc2.connect(gain);
-      osc3.connect(gain);
-
-      gain.connect(audioCtx.destination);
-
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
       osc1.start(now);
-      osc2.start(now);
-      osc3.start(now);
+      osc1.stop(now + 0.18);
 
-      osc1.stop(now + duration);
-      osc2.stop(now + duration);
-      osc3.stop(now + duration);
+      // Tone 2: Urgent High Burst (1200Hz -> 840Hz)
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(1200, now + 0.20);
+      osc2.frequency.exponentialRampToValueAtTime(840, now + 0.34);
+
+      gain2.gain.setValueAtTime(0.28, now + 0.20);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start(now + 0.20);
+      osc2.stop(now + 0.38);
     } catch (e) {}
   }
 
