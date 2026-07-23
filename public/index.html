@@ -565,41 +565,44 @@
     border: 1px solid #fca5a5 !important;
   }
 
-  /* SOLID YELLOW/AMBER WARNING CARD STYLES */
+  /* BRIGHT SOLID YELLOW WARNING CARD STYLES */
   @keyframes warning-card-pulse {
-    0% { background-color: #92400e !important; border-color: #f59e0b !important; box-shadow: 0 0 25px rgba(245, 158, 11, 0.5) !important; }
-    50% { background-color: #b45309 !important; border-color: #ffffff !important; box-shadow: 0 0 40px rgba(251, 191, 36, 0.8) !important; }
-    100% { background-color: #92400e !important; border-color: #f59e0b !important; box-shadow: 0 0 25px rgba(245, 158, 11, 0.5) !important; }
+    0% { background-color: #d97706 !important; border-color: #fde047 !important; box-shadow: 0 0 25px rgba(234, 179, 8, 0.6) !important; }
+    50% { background-color: #eab308 !important; border-color: #ffffff !important; box-shadow: 0 0 45px rgba(250, 204, 21, 0.9) !important; }
+    100% { background-color: #d97706 !important; border-color: #fde047 !important; box-shadow: 0 0 25px rgba(234, 179, 8, 0.6) !important; }
   }
 
   .channel-card.warning-hi, .channel-card.warning-lo {
-    background-color: #b45309 !important;
-    background: #b45309 !important;
-    border: 2px solid #f59e0b !important;
-    animation: warning-card-pulse 1.6s infinite ease-in-out !important;
+    background-color: #eab308 !important;
+    background: #eab308 !important;
+    border: 2px solid #facc15 !important;
+    animation: warning-card-pulse 1.5s infinite ease-in-out !important;
   }
   .channel-card.warning-hi .temp-val, .channel-card.warning-lo .temp-val,
   .channel-card.warning-hi .ch-label, .channel-card.warning-lo .ch-label {
-    color: #ffffff !important;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+    color: #0f172a !important;
+    text-shadow: none !important;
+    font-weight: 800 !important;
   }
   .channel-card.warning-hi .card-meta, .channel-card.warning-lo .card-meta,
   .channel-card.warning-hi .temp-unit, .channel-card.warning-lo .temp-unit,
   .channel-card.warning-hi .card-last-updated, .channel-card.warning-lo .card-last-updated {
-    color: #fef3c7 !important;
+    color: #451a03 !important;
+    font-weight: 700 !important;
   }
   .channel-card.warning-hi .ch-badge, .channel-card.warning-lo .ch-badge {
-    background: rgba(0, 0, 0, 0.5) !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    background: rgba(0, 0, 0, 0.2) !important;
+    color: #0f172a !important;
+    border: 1px solid rgba(0, 0, 0, 0.2) !important;
+    font-weight: 800 !important;
   }
   .channel-card.warning-hi .threshold-bar-track, .channel-card.warning-lo .threshold-bar-track {
-    background: rgba(0, 0, 0, 0.4) !important;
+    background: rgba(0, 0, 0, 0.25) !important;
   }
   .channel-card.warning-hi .alarm-status-pill, .channel-card.warning-lo .alarm-status-pill {
     background: #78350f !important;
     color: #ffffff !important;
-    border: 1px solid #fde68a !important;
+    border: 1px solid #fef08a !important;
   }
 
   .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
