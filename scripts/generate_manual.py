@@ -31,12 +31,18 @@ class NumberedCanvas(canvas.Canvas):
         self.setFont("Helvetica", 8)
         self.setFillColor(colors.HexColor("#64748b"))
 
-        # Skip header on cover page (Page 1)
+        # Header on pages 2+
         if self._pageNumber > 1:
-            self.drawString(54, 750, "HeatWatch 3 — Industrial Temperature Telemetry & Control System")
+            logo_path = "/Users/suryanarayan/Documents/Projects/Work/HeatWatch3/goose_logo.png"
+            if os.path.exists(logo_path):
+                try:
+                    self.drawImage(logo_path, 54, 746, width=16, height=16, preserveAspectRatio=True, mask='auto')
+                except Exception:
+                    pass
+            self.drawString(76, 750, "HeatWatch 3 — Industrial Temperature Telemetry & Control System (Goose)")
             self.setStrokeColor(colors.HexColor("#cbd5e1"))
             self.setLineWidth(0.5)
-            self.line(54, 744, 558, 744)
+            self.line(54, 742, 558, 742)
 
         # Footer on all pages
         page_text = f"Page {self._pageNumber} of {page_count}"
@@ -154,8 +160,8 @@ def create_heatwatch_manual(filename):
     # ---------------------------------------------------------
     banner_path = "/Users/suryanarayan/Documents/Projects/Work/HeatWatch3/GooseBanner.jpeg"
     if os.path.exists(banner_path):
-        story.append(Image(banner_path, width=504, height=90))
-        story.append(Spacer(1, 10))
+        story.append(Image(banner_path, width=504, height=115))
+        story.append(Spacer(1, 12))
 
     story.append(Paragraph("HeatWatch 3 Industrial Temperature Telemetry System", title_style))
     story.append(Paragraph("Comprehensive Product Manual, Hardware Architecture, Operations & Troubleshooting Guide", subtitle_style))
