@@ -154,28 +154,36 @@ def create_heatwatch_manual(filename):
     story = []
 
     # ---------------------------------------------------------
-    # DEDICATED EXECUTIVE COVER PAGE
+    # COVER HEADER: SMALL GOOSE BANNER TO THE LEFT OF TITLE
     # ---------------------------------------------------------
     banner_path = "/Users/suryanarayan/Documents/Projects/Work/HeatWatch3/GooseBanner.jpeg"
+    
     if os.path.exists(banner_path):
-        # 16:9 ratio image scaled to 504px width x 283.5px height
-        banner_img = Image(banner_path, width=504, height=283.5)
-        # Wrap image inside container with subtle border
-        banner_table = Table([[banner_img]], colWidths=[504])
-        banner_table.setStyle(TableStyle([
-            ('BOX', (0,0), (-1,-1), 1, border_slate),
-            ('PADDING', (0,0), (-1,-1), 0),
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        # Small 16:9 Goose Banner (130px width x 73.1px height)
+        small_banner = Image(banner_path, width=130, height=73.125)
+        title_block = [
+            Paragraph("HeatWatch 3", cover_title_style),
+            Paragraph("Industrial Temperature Telemetry System", cover_subtitle_style),
+            Paragraph("<b>Official Operations, Architecture & Troubleshooting Manual</b>", body_style)
+        ]
+        header_table = Table([[small_banner, title_block]], colWidths=[140, 364])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,0), (0,0), 'LEFT'),
+            ('ALIGN', (1,0), (1,0), 'LEFT'),
+            ('LEFTPADDING', (1,0), (1,0), 10),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
         ]))
-        story.append(banner_table)
-        story.append(Spacer(1, 16))
+        story.append(header_table)
+    else:
+        story.append(Paragraph("HeatWatch 3", cover_title_style))
+        story.append(Paragraph("Industrial Temperature Telemetry & Control System", cover_subtitle_style))
+        story.append(Paragraph("<b>Official Operations, Architecture & Troubleshooting Manual</b>", body_style))
 
-    story.append(Paragraph("HeatWatch 3", cover_title_style))
-    story.append(Paragraph("Industrial Temperature Telemetry & Control System", cover_subtitle_style))
+    story.append(Spacer(1, 10))
     story.append(HRFlowable(width="100%", thickness=2, color=primary_cyan, spaceBefore=0, spaceAfter=14))
-
-    story.append(Paragraph("<b>Official Operations, Architecture, Administration & Troubleshooting Manual</b>", body_style))
-    story.append(Spacer(1, 8))
 
     # Executive Metadata Table
     meta_data = [
