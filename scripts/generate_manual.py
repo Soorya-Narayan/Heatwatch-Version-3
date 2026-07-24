@@ -31,7 +31,7 @@ class NumberedCanvas(canvas.Canvas):
         self.setFont("Helvetica", 8)
         self.setFillColor(colors.HexColor("#64748b"))
 
-        # Header on pages 2+
+        # Running Header on pages 2+
         if self._pageNumber > 1:
             logo_path = "/Users/suryanarayan/Documents/Projects/Work/HeatWatch3/goose_logo.png"
             if os.path.exists(logo_path):
@@ -39,12 +39,12 @@ class NumberedCanvas(canvas.Canvas):
                     self.drawImage(logo_path, 54, 746, width=16, height=16, preserveAspectRatio=True, mask='auto')
                 except Exception:
                     pass
-            self.drawString(76, 750, "HeatWatch 3 — Industrial Temperature Telemetry & Control System (Goose)")
+            self.drawString(76, 750, "HeatWatch 3 — Industrial Temperature Telemetry System (Goose)")
             self.setStrokeColor(colors.HexColor("#cbd5e1"))
             self.setLineWidth(0.5)
             self.line(54, 742, 558, 742)
 
-        # Footer on all pages
+        # Running Footer on all pages
         page_text = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(558, 36, page_text)
         self.drawString(54, 36, "CONFIDENTIAL & PROPRIETARY — GOOSE INDUSTRIAL SYSTEMS")
@@ -66,34 +66,32 @@ def create_heatwatch_manual(filename):
 
     styles = getSampleStyleSheet()
 
-    # Custom Color Palette
-    primary_color = colors.HexColor("#0e7490") # Industrial Cyan
-    secondary_color = colors.HexColor("#0f172a") # Slate Dark
+    # Custom Executive Color Palette
+    primary_cyan = colors.HexColor("#0e7490")
+    secondary_navy = colors.HexColor("#0f172a")
     text_dark = colors.HexColor("#1e293b")
-    alarm_red = colors.HexColor("#dc2626")
-    warning_yellow = colors.HexColor("#d97706")
-    normal_green = colors.HexColor("#10b981")
-    bg_light = colors.HexColor("#f8fafc")
+    border_slate = colors.HexColor("#cbd5e1")
+    bg_subtle = colors.HexColor("#f8fafc")
 
-    # Custom Typography Styles
-    title_style = ParagraphStyle(
-        'DocTitle',
+    # Typography Styles
+    cover_title_style = ParagraphStyle(
+        'CoverTitle',
         parent=styles['Heading1'],
         fontName='Helvetica-Bold',
-        fontSize=22,
-        leading=26,
-        textColor=secondary_color,
-        spaceAfter=6
+        fontSize=24,
+        leading=28,
+        textColor=secondary_navy,
+        spaceAfter=4
     )
 
-    subtitle_style = ParagraphStyle(
-        'DocSubtitle',
+    cover_subtitle_style = ParagraphStyle(
+        'CoverSubtitle',
         parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=11,
-        leading=15,
-        textColor=primary_color,
-        spaceAfter=14
+        fontName='Helvetica-Bold',
+        fontSize=12,
+        leading=16,
+        textColor=primary_cyan,
+        spaceAfter=10
     )
 
     heading1_style = ParagraphStyle(
@@ -102,7 +100,7 @@ def create_heatwatch_manual(filename):
         fontName='Helvetica-Bold',
         fontSize=14,
         leading=18,
-        textColor=secondary_color,
+        textColor=secondary_navy,
         spaceBefore=14,
         spaceAfter=8,
         keepWithNext=True
@@ -114,7 +112,7 @@ def create_heatwatch_manual(filename):
         fontName='Helvetica-Bold',
         fontSize=11,
         leading=15,
-        textColor=primary_color,
+        textColor=primary_cyan,
         spaceBefore=10,
         spaceAfter=4,
         keepWithNext=True
@@ -133,7 +131,7 @@ def create_heatwatch_manual(filename):
     bullet_style = ParagraphStyle(
         'BulletCustom',
         parent=body_style,
-        leftIndent=15,
+        leftIndent=14,
         firstLineIndent=-10,
         spaceAfter=4
     )
@@ -156,40 +154,68 @@ def create_heatwatch_manual(filename):
     story = []
 
     # ---------------------------------------------------------
-    # COVER / HEADER BANNER
+    # DEDICATED EXECUTIVE COVER PAGE
     # ---------------------------------------------------------
     banner_path = "/Users/suryanarayan/Documents/Projects/Work/HeatWatch3/GooseBanner.jpeg"
     if os.path.exists(banner_path):
-        story.append(Image(banner_path, width=504, height=115))
-        story.append(Spacer(1, 12))
+        # 16:9 ratio image scaled to 504px width x 283.5px height
+        banner_img = Image(banner_path, width=504, height=283.5)
+        # Wrap image inside container with subtle border
+        banner_table = Table([[banner_img]], colWidths=[504])
+        banner_table.setStyle(TableStyle([
+            ('BOX', (0,0), (-1,-1), 1, border_slate),
+            ('PADDING', (0,0), (-1,-1), 0),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ]))
+        story.append(banner_table)
+        story.append(Spacer(1, 16))
 
-    story.append(Paragraph("HeatWatch 3 Industrial Temperature Telemetry System", title_style))
-    story.append(Paragraph("Comprehensive Product Manual, Hardware Architecture, Operations & Troubleshooting Guide", subtitle_style))
-    story.append(HRFlowable(width="100%", thickness=1.5, color=primary_color, spaceBefore=0, spaceAfter=12))
+    story.append(Paragraph("HeatWatch 3", cover_title_style))
+    story.append(Paragraph("Industrial Temperature Telemetry & Control System", cover_subtitle_style))
+    story.append(HRFlowable(width="100%", thickness=2, color=primary_cyan, spaceBefore=0, spaceAfter=14))
 
-    # Meta Info Table
+    story.append(Paragraph("<b>Official Operations, Architecture, Administration & Troubleshooting Manual</b>", body_style))
+    story.append(Spacer(1, 8))
+
+    # Executive Metadata Table
     meta_data = [
         [
             Paragraph("<b>Product Version:</b> v3.0.4", body_style),
             Paragraph("<b>Hardware Target:</b> PPI AIME 8U / Pi 5", body_style),
-            Paragraph("<b>Target Host:</b> goosepi (192.168.1.140)", body_style)
+            Paragraph("<b>Host Node:</b> goosepi (192.168.1.140)", body_style)
         ],
         [
-            Paragraph("<b>Document Class:</b> Technical & Operational Manual", body_style),
-            Paragraph("<b>OS Compatibility:</b> Linux Bookworm / Raspberry Pi OS", body_style),
-            Paragraph("<b>Date:</b> July 2026", body_style)
+            Paragraph("<b>Classification:</b> Executive Operations Manual", body_style),
+            Paragraph("<b>OS Target:</b> Raspberry Pi OS (Bookworm)", body_style),
+            Paragraph("<b>Release Date:</b> July 2026", body_style)
         ]
     ]
     meta_table = Table(meta_data, colWidths=[168, 168, 168])
     meta_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#e2e8f0")),
-        ('PADDING', (0,0), (-1,-1), 6),
+        ('PADDING', (0,0), (-1,-1), 8),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
     story.append(meta_table)
     story.append(Spacer(1, 14))
+
+    # Callout Box
+    notice_text = Paragraph(
+        "<b>SYSTEM NOTICE:</b> This document contains proprietary technical operating instructions and hardware troubleshooting procedures for the HeatWatch 3 platform. All instructions comply with Goose Industrial Safety Standards.",
+        body_style
+    )
+    notice_table = Table([[notice_text]], colWidths=[504])
+    notice_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#ecfeff")),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#06b6d4")),
+        ('PADDING', (0,0), (-1,-1), 10),
+    ]))
+    story.append(notice_table)
+
+    # Page Break to start Section 1 fresh on Page 2
+    story.append(PageBreak())
 
     # ---------------------------------------------------------
     # 1. EXECUTIVE SYSTEM OVERVIEW & PURPOSE
@@ -211,7 +237,7 @@ def create_heatwatch_manual(filename):
     story.append(Paragraph("2. Core Product Features", heading1_style))
 
     features_data = [
-        [Paragraph("<b>Feature Feature Category</b>", body_style), Paragraph("<b>Technical Capabilities & Specifications</b>", body_style)],
+        [Paragraph("<b>Feature Category</b>", body_style), Paragraph("<b>Technical Capabilities & Specifications</b>", body_style)],
         [
             Paragraph("<b>8-Channel Real-time Grid</b>", body_style),
             Paragraph("Live telemetry updated every 2 seconds via WebSockets. Includes channel badge, sensor label, progress bar, threshold markers, and dynamic 'Last updated X sec ago' ticker.", body_style)
@@ -395,7 +421,7 @@ def create_heatwatch_manual(filename):
 
     # Build PDF Document
     doc.build(story, canvasmaker=NumberedCanvas)
-    print(f"[SUCCESS] HeatWatch 3 Manual created successfully at: {filename}")
+    print(f"[SUCCESS] HeatWatch 3 Executive Manual created successfully at: {filename}")
 
 if __name__ == "__main__":
     out_pdf = "/Users/suryanarayan/Documents/Projects/Work/HeatWatch3/public/HeatWatch3_Industrial_System_Manual.pdf"
